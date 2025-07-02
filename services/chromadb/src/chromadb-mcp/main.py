@@ -13,7 +13,12 @@ from starlette.types import Receive, Scope, Send
 import argparse
 import os
 import chromadb
+import sys
 
+# Add the directory of the current file to the Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from .embedding import NomicEmbeddingFunction
 
 from chromadb.api.collection_configuration import CreateCollectionConfiguration
 from chromadb.api import EmbeddingFunction
@@ -26,14 +31,16 @@ from chromadb.utils.embedding_functions import (
     RoboflowEmbeddingFunction,
 )
 
+# Import our custom Nomic embedding function
+from embedding import NomicEmbeddingFunction
+
 
 mcp_known_embedding_functions: Dict[str, EmbeddingFunction] = {
-    "default": DefaultEmbeddingFunction,
-    "cohere": CohereEmbeddingFunction,
-    "openai": OpenAIEmbeddingFunction,
-    "jina": JinaEmbeddingFunction,
-    "voyageai": VoyageAIEmbeddingFunction,
-    "roboflow": RoboflowEmbeddingFunction,
+    "default": NomicEmbeddingFunction,
+    "nomic": NomicEmbeddingFunction,
+    "nomic_query": lambda: NomicEmbeddingFunction(prompt_name="query"),
+    "nomic_document": lambda: NomicEmbeddingFunction(prompt_name="document"),
+    "nomic_clustering": lambda: NomicEmbeddingFunction(prompt_name="Clustering"),
 }
 
 
@@ -110,10 +117,16 @@ async def chroma_create_collection(
     """
     client = get_chroma_client()
 
-    embedding_function = mcp_known_embedding_functions[embedding_function_name]
+    embedding_function_factory = mcp_known_embedding_functions[embedding_function_name]
+    
+    # Handle lambda functions and regular classes
+    if callable(embedding_function_factory) and hasattr(embedding_function_factory, '__name__') and embedding_function_factory.__name__ == '<lambda>':
+        embedding_function = embedding_function_factory()
+    else:
+        embedding_function = embedding_function_factory()
 
     configuration = CreateCollectionConfiguration(
-        embedding_function=embedding_function()
+        embedding_function=embedding_function
     )
 
     try:
