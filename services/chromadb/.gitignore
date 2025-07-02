@@ -1,1 +1,3 @@
 chromadb/
+chromadb_mcp.egg-info/
+__pycache__/

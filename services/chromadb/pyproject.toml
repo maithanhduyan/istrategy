@@ -1,0 +1,28 @@
+[project]
+name = "chromadb-mcp"
+version = "0.1.0"
+description = "ChromaDB MCP server"
+authors = [
+    {"name" = "Mai Thành Duy An", "email" = "tiachop0102@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "uvicorn[standard]",
+    "mcp",
+    "sentence-transformers",
+    "pydantic",
+    "einops",
+    "chromadb",
+    "starlette",
+    "click",
+    "anyio",
+    "httpx"
+]
+
+[tool.setuptools]
+packages = ["src.chromadb-mcp"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

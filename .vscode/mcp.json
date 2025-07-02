@@ -2,6 +2,12 @@
     "servers": {
         "qdrant-mcp": {
             "url": "http://localhost:3002/mcp/"
+        },
+        "chromadb-mcp": {
+            "url": "http://localhost:3003/mcp/"
+        },
+        "test-chromadb-mcp": {
+            "url": "http://localhost:3004/mcp/"
         }
     }
 }
