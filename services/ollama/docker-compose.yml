@@ -1,0 +1,28 @@
+services:
+
+  ollama:
+    container_name: ollama
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data:/root/.ollama
+      - ./init-ollama.sh:/usr/local/bin/init-ollama.sh:ro
+    restart: always
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:11434/api/tags" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+      start_period: 120s
+    entrypoint: [ "/bin/bash", "/usr/local/bin/init-ollama.sh" ]
+    networks:
+      - strategy_net
+
+networks:
+  strategy_net:
+    external: true

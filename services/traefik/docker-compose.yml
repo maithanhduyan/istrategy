@@ -1,0 +1,135 @@
+services:
+  traefik:
+    image: traefik:v3.4.0
+    container_name: traefik
+    env_file: .env
+    command:
+      # traefik
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --api.debug=false
+      # log
+      - --log.level=INFO
+      - --log.filepath=/var/log/traefik/traefik.log
+      - --accesslog.filepath=/var/log/traefik/access.log
+      # providers
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      # http, https
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.postgres.address=:5432
+      # Let's Encrypt
+      - --certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+
+      - "traefik.http.routers.traefik.middlewares=authtraefik"
+    labels:
+      - "traefik.enable=true"
+      # Dashboard
+      - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_URL}`)"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=auth"
+      # Basic Auth Middleware  
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASSWORD_HASHED}"
+    ports:
+      - "80:80" # http
+      - "443:443" # https
+      - "8080:8080" # for traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./acme.json:/letsencrypt/acme.json
+      - ./log:/var/log/traefik
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    networks:
+      - strategy_net
+
+networks:
+  strategy_net:
+    external: true
+
+
+# 
+# docker network create strategy_net
+# 
+
+
+# =============================================================================
+# 🚀 DOCKER COMPOSE COMMANDS - Quản lý Services
+# =============================================================================
+# Create network for the first time.
+# docker network create -d bridge strategy_net
+#
+# 📋 All Services Management
+# docker compose up -d --build                    # Start all services
+# docker compose down                             # Stop all services
+# docker compose restart                          # Restart all services
+# docker compose ps                               # Check service status
+# docker compose logs -f                          # View all logs (follow)
+
+# 🗄️ PostgreSQL Database Service
+# docker compose up -d db                         # Start PostgreSQL only
+# docker compose stop db                          # Stop PostgreSQL
+# docker compose restart db                       # Restart PostgreSQL
+# docker compose logs -f db                       # View PostgreSQL logs
+
+# 🤖 Ollama AI Service
+# docker compose up -d ollama                     # Start Ollama only
+# docker compose stop ollama                      # Stop Ollama
+# docker compose restart ollama                   # Restart Ollama
+# docker compose logs -f ollama                   # View Ollama logs
+
+# 📊 ChromaDB Vector Database Service
+# docker compose up -d chromadb                   # Start ChromaDB only
+# docker compose stop chromadb                    # Stop ChromaDB
+# docker compose restart chromadb                 # Restart ChromaDB
+# docker compose logs -f chromadb                 # View ChromaDB logs
+
+# 🔧 Multiple Services Combinations
+# docker compose up -d db ollama                  # Start PostgreSQL + Ollama
+# docker compose up -d ollama chromadb            # Start Ollama + ChromaDB
+# docker compose stop db chromadb                 # Stop PostgreSQL + ChromaDB
+
+# 🩺 Health Checks & Debugging
+# docker compose exec db pg_isready -U postgres   # Check PostgreSQL health
+# docker compose exec ollama ollama list          # List Ollama models
+# docker compose exec ollama ollama pull nomic-embed-text  # Pull embedding model
+# curl http://localhost:11434/api/tags             # Check Ollama API
+# curl http://localhost:8000/api/v1/heartbeat     # Check ChromaDB API
+
+# 🤖 Ollama Model Management
+# docker compose exec ollama ollama pull nomic-embed-text    # Pull embedding model
+# docker compose exec ollama ollama pull llama3.2:1b        # Pull small LLM model  
+# docker compose exec ollama ollama list                     # List installed models
+# docker compose exec ollama ollama show nomic-embed-text   # Show model details
+# docker compose exec ollama ollama rm nomic-embed-text     # Remove model
+
+# 📊 Container Management
+# docker compose top                              # Show running processes
+# docker compose stats                            # Show resource usage
+# docker compose exec db psql -U postgres         # Connect to PostgreSQL
+# docker compose exec ollama bash                 # Enter Ollama container
+
+# 🧹 Cleanup Commands
+# docker compose down -v                          # Stop and remove volumes
+# docker compose down --rmi all                   # Stop and remove images
+# docker system prune -f                          # Clean up unused Docker resources
+
+# 🔄 Development Workflow
+# docker compose up -d db                         # 1. Start database first
+# docker compose up -d ollama                     # 2. Start Ollama (pull models)
+# docker compose up -d chromadb                   # 3. Start ChromaDB (depends on Ollama)
+# docker compose logs -f ollama                   # 4. Monitor Ollama model download
+
+# Named volumes for data persistence
+
+# Tạo file acme.json nếu chưa tồn tại (Windows)
+# powershell -Command "if (!(Test-Path 'services/traefik/acme.json')) { New-Item -Path 'services/traefik/acme.json' -ItemType File | Out-Null }"
+# Đặt quyền chỉ cho phép user hiện tại đọc/ghi (tương đương chmod 600 trên Linux)
+# icacls services\traefik\acme.json /inheritance:r /grant:r Administrators:F
