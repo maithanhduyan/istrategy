@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+sentence-transformers
+einops
+
+[dev]
+pytest>=7.0
+httpx

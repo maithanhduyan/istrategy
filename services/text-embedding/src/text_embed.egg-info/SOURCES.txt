@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+src/text_embed/__init__.py
+src/text_embed/main.py
+src/text_embed.egg-info/PKG-INFO
+src/text_embed.egg-info/SOURCES.txt
+src/text_embed.egg-info/dependency_links.txt
+src/text_embed.egg-info/requires.txt
+src/text_embed.egg-info/top_level.txt
+test/test_client.py
+test/test_endpoints.py

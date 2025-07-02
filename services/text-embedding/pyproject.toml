@@ -1,0 +1,30 @@
+[project]
+name = "text-embed"
+version = "0.1.0"
+description = "HTTP embedding service"
+authors = [{name = "Mai Thành Duy An", email = "tiachop0102@gmail.com"}]
+requires-python = ">=3.11"
+
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "sentence-transformers",
+    "einops"
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "httpx"
+]

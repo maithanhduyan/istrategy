@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: text-embed
+Version: 0.1.0
+Summary: HTTP embedding service
+Author-email: Mai Thành Duy An <tiachop0102@gmail.com>
+Requires-Python: >=3.11
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: pydantic
+Requires-Dist: sentence-transformers
+Requires-Dist: einops
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: httpx; extra == "dev"

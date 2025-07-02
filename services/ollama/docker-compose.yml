@@ -17,11 +17,17 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
       start_period: 120s
     entrypoint: [ "/bin/bash", "/usr/local/bin/init-ollama.sh" ]
     networks:
       - strategy_net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
 networks:
   strategy_net:

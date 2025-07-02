@@ -1,0 +1,23 @@
+{
+    "name": "Text Embedding Service",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "text-embedding",
+    "workspaceFolder": "/workspace",
+    // Configure tool-specific properties
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.flake8",
+                "ms-python.black-formatter",
+                "ms-python.isort",
+                "ms-toolsai.jupyter",
+                "charliermarsh.ruff",
+                "ms-vscode.vscode-json",
+                "redhat.vscode-yaml",
+                "ms-vscode.docker"
+            ]
+        }
+    },
+    "postCreateCommand": "bash"
+}
