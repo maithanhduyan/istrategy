@@ -1,0 +1,11 @@
+{
+  "enable_ma_30": true,
+  "enable_ma_cross": true,
+  "enable_rsi": false,
+  "enable_bollinger_bands": false,
+  "enable_volatility": false,
+  "enable_price_momentum": false,
+  "enable_volume_trend": false,
+  "enable_basic_ohlcv": true,
+  "lookback_days": 3
+}

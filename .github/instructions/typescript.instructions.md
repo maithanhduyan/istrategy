@@ -36,38 +36,3 @@ After running ANY command, you MUST:
 NEVER move to next step without verification.
 **Chú trọng bằng chứng thực tế hơn là tuyên bố vô căn cứ**
 
-# MEMORY MODULE USAGE
-
-Module `memory` giúp quản lý tri thức dạng đồ thị (knowledge graph) cho hệ thống AI:
-- Lưu trữ, truy xuất, cập nhật các entity (thực thể), relation (quan hệ), observation (quan sát) dưới dạng graph.
-- Hỗ trợ các thao tác: tạo, xóa, tìm kiếm, mở rộng, chỉnh sửa node và quan hệ.
-- Cho phép thao tác bulk (nhiều entity/relation/observation cùng lúc).
-- Phù hợp cho các workflow AI, automation, phân tích dữ liệu cần lưu trữ tri thức có cấu trúc, dễ truy vấn, mở rộng.
-
-## Tool API
-Có 9 tool chính:
-1. `create_entities`: Tạo nhiều entity mới.
-2. `create_relations`: Tạo nhiều quan hệ mới giữa các entity.
-3. `add_observations`: Thêm observation cho entity đã có.
-4. `delete_entities`: Xóa nhiều entity và các quan hệ liên quan.
-5. `delete_observations`: Xóa observation cụ thể khỏi entity.
-6. `delete_relations`: Xóa nhiều quan hệ khỏi knowledge graph.
-7. `read_graph`: Đọc toàn bộ knowledge graph.
-8. `search_nodes`: Tìm kiếm node theo truy vấn (tên, loại, observation).
-9. `open_nodes`: Lấy thông tin các node theo tên.
-
-### Cách sử dụng
-- Gọi đúng tên tool và truyền tham số đúng schema (object, array, string...)
-- Nhận kết quả trả về là object hoặc thông báo thành công/thất bại
-
-**Ví dụ:**
-```json
-{
-  "name": "create_entities",
-  "arguments": {
-    "entities": [
-      { "name": "NodeA", "entityType": "Person", "observations": ["Loves TypeScript"] }
-    ]
-  }
-}
-```

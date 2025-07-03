@@ -279,6 +279,219 @@ impl GoldTradingBot {
     }
 }
 
+/// Configuration cho indicators - cho phép bật/tắt từng chỉ báo
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndicatorConfig {
+    pub enable_ma_30: bool,           // Bật/tắt MA High/Low 30
+    pub enable_ma_cross: bool,        // Bật/tắt MA Cross 50/200
+    pub enable_rsi: bool,             // Bật/tắt RSI
+    pub enable_bollinger_bands: bool, // Bật/tắt Bollinger Bands
+    pub enable_volatility: bool,      // Bật/tắt Volatility
+    pub enable_price_momentum: bool,  // Bật/tắt Price Momentum
+    pub enable_volume_trend: bool,    // Bật/tắt Volume Trend
+    pub enable_basic_ohlcv: bool,     // Bật/tắt OHLCV cơ bản
+    pub lookback_days: usize,         // Số ngày lookback cho OHLCV
+}
+
+impl Default for IndicatorConfig {
+    fn default() -> Self {
+        Self {
+            enable_ma_30: true,
+            enable_ma_cross: true,
+            enable_rsi: true,
+            enable_bollinger_bands: true,
+            enable_volatility: true,
+            enable_price_momentum: true,
+            enable_volume_trend: true,
+            enable_basic_ohlcv: true,
+            lookback_days: 5,
+        }
+    }
+}
+
+impl IndicatorConfig {
+    /// Tạo config cho chiến lược cơ bản (chỉ OHLCV + MA)
+    pub fn basic_strategy() -> Self {
+        Self {
+            enable_ma_30: true,
+            enable_ma_cross: true,
+            enable_rsi: false,
+            enable_bollinger_bands: false,
+            enable_volatility: false,
+            enable_price_momentum: false,
+            enable_volume_trend: false,
+            enable_basic_ohlcv: true,
+            lookback_days: 3,
+        }
+    }
+    
+    /// Tạo config cho chiến lược nâng cao (tất cả indicators)
+    pub fn advanced_strategy() -> Self {
+        Self::default()
+    }
+    
+    /// Tạo config cho chiến lược momentum (tập trung vào momentum)
+    pub fn momentum_strategy() -> Self {
+        Self {
+            enable_ma_30: false,
+            enable_ma_cross: true,
+            enable_rsi: true,
+            enable_bollinger_bands: false,
+            enable_volatility: true,
+            enable_price_momentum: true,
+            enable_volume_trend: true,
+            enable_basic_ohlcv: true,
+            lookback_days: 5,
+        }
+    }
+    
+    /// Tạo config cho chiến lược trend following (tập trung vào trend)
+    pub fn trend_following_strategy() -> Self {
+        Self {
+            enable_ma_30: true,
+            enable_ma_cross: true,
+            enable_rsi: false,
+            enable_bollinger_bands: true,
+            enable_volatility: false,
+            enable_price_momentum: true,
+            enable_volume_trend: false,
+            enable_basic_ohlcv: true,
+            lookback_days: 10,
+        }
+    }
+    
+    /// Tạo config từ string (để dễ dàng thay đổi từ command line)
+    pub fn from_strategy_name(name: &str) -> Self {
+        match name.to_lowercase().as_str() {
+            "basic" => Self::basic_strategy(),
+            "advanced" => Self::advanced_strategy(),
+            "momentum" => Self::momentum_strategy(),
+            "trend" => Self::trend_following_strategy(),
+            _ => {
+                println!("Unknown strategy '{}', using default advanced strategy", name);
+                Self::advanced_strategy()
+            }
+        }
+    }
+    
+    /// Tạo custom config từ indicators list
+    pub fn from_indicators(indicators: Vec<&str>, lookback_days: usize) -> Self {
+        let mut config = Self {
+            enable_ma_30: false,
+            enable_ma_cross: false,
+            enable_rsi: false,
+            enable_bollinger_bands: false,
+            enable_volatility: false,
+            enable_price_momentum: false,
+            enable_volume_trend: false,
+            enable_basic_ohlcv: true, // Luôn bật OHLCV
+            lookback_days,
+        };
+        
+        for indicator in indicators {
+            match indicator.to_lowercase().as_str() {
+                "ma30" => config.enable_ma_30 = true,
+                "ma_cross" => config.enable_ma_cross = true,
+                "rsi" => config.enable_rsi = true,
+                "bb" | "bollinger" => config.enable_bollinger_bands = true,
+                "volatility" => config.enable_volatility = true,
+                "momentum" => config.enable_price_momentum = true,
+                "volume" => config.enable_volume_trend = true,
+                "ohlcv" => config.enable_basic_ohlcv = true,
+                _ => println!("Unknown indicator: {}", indicator),
+            }
+        }
+        
+        config
+    }
+    
+    /// Load config từ JSON file
+    pub fn load_from_file(file_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let file_content = std::fs::read_to_string(file_path)?;
+        let config: Self = serde_json::from_str(&file_content)?;
+        Ok(config)
+    }
+    
+    /// Save config to JSON file
+    pub fn save_to_file(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let json = serde_json::to_string_pretty(self)?;
+        std::fs::write(file_path, json)?;
+        println!("Saved indicator config to: {}", file_path);
+        Ok(())
+    }
+    
+    /// Tính toán số lượng features sẽ được tạo ra
+    pub fn calculate_feature_count(&self) -> usize {
+        let mut count = 0;
+        
+        if self.enable_basic_ohlcv {
+            count += self.lookback_days * 2; // close_price + volume cho mỗi ngày
+        }
+        
+        if self.enable_ma_30 {
+            count += 2; // ma_high_30 + ma_low_30
+        }
+        
+        if self.enable_ma_cross {
+            count += 3; // ma_50 + ma_200 + ma_cross_signal
+        }
+        
+        if self.enable_rsi {
+            count += 1; // rsi
+        }
+        
+        if self.enable_bollinger_bands {
+            count += 1; // bb_position
+        }
+        
+        if self.enable_volatility {
+            count += 1; // volatility
+        }
+        
+        if self.enable_price_momentum {
+            count += 1; // price_momentum
+        }
+        
+        if self.enable_volume_trend {
+            count += 1; // volume_trend
+        }
+        
+        count
+    }
+    
+    /// Lấy tên các indicators đang được bật
+    pub fn get_active_indicators(&self) -> Vec<String> {
+        let mut indicators = Vec::new();
+        
+        if self.enable_basic_ohlcv {
+            indicators.push(format!("OHLCV({}d)", self.lookback_days));
+        }
+        if self.enable_ma_30 {
+            indicators.push("MA30".to_string());
+        }
+        if self.enable_ma_cross {
+            indicators.push("MA_Cross(50/200)".to_string());
+        }
+        if self.enable_rsi {
+            indicators.push("RSI".to_string());
+        }
+        if self.enable_bollinger_bands {
+            indicators.push("BB".to_string());
+        }
+        if self.enable_volatility {
+            indicators.push("Volatility".to_string());
+        }
+        if self.enable_price_momentum {
+            indicators.push("Momentum".to_string());
+        }
+        if self.enable_volume_trend {
+            indicators.push("Volume_Trend".to_string());
+        }
+        
+        indicators
+    }
+}
+
 /// Advanced Technical Indicators cho vàng
 #[derive(Debug, Clone)]
 pub struct GoldTechnicalIndicators {
@@ -311,7 +524,7 @@ pub struct GoldGenerationStats {
     pub best_portfolio: GoldPortfolio,
 }
 
-/// NEAT Gold Trading System
+/// NEAT Gold Trading System với indicator configuration
 pub struct NeatGoldTradingSystem {
     pub population_size: usize,
     pub initial_balance: f64,
@@ -321,6 +534,7 @@ pub struct NeatGoldTradingSystem {
     pub current_generation: usize,
     pub market_data: Vec<GoldOhlcvData>,
     pub generation_stats: Vec<GoldGenerationStats>,
+    pub indicator_config: IndicatorConfig,  // Thêm config cho indicators
 }
 
 impl NeatGoldTradingSystem {
@@ -340,7 +554,46 @@ impl NeatGoldTradingSystem {
             current_generation: 0,
             market_data: Vec::new(),
             generation_stats: Vec::new(),
+            indicator_config: IndicatorConfig::default(),
         }
+    }
+    
+    /// Tạo với custom indicator config
+    pub fn new_with_config(
+        population_size: usize,
+        initial_balance: f64,
+        trade_percentage: f64,
+        elite_percentage: f64,
+        mutation_percentage: f64,
+        indicator_config: IndicatorConfig,
+    ) -> Self {
+        Self {
+            population_size,
+            initial_balance,
+            trade_percentage,
+            elite_percentage,
+            mutation_percentage,
+            current_generation: 0,
+            market_data: Vec::new(),
+            generation_stats: Vec::new(),
+            indicator_config,
+        }
+    }
+    
+    /// Thay đổi indicator config trong runtime
+    pub fn set_indicator_config(&mut self, config: IndicatorConfig) {
+        self.indicator_config = config;
+        println!("Updated indicator config. Active indicators: {:?}", 
+                 self.indicator_config.get_active_indicators());
+    }
+    
+    /// Lấy thông tin về các indicators hiện đang sử dụng
+    pub fn get_strategy_info(&self) -> String {
+        format!(
+            "Strategy: {} indicators active, {} features per sample",
+            self.indicator_config.get_active_indicators().len(),
+            self.indicator_config.calculate_feature_count()
+        )
     }
 
     /// Load dữ liệu OHLCV vàng từ CSV
@@ -514,57 +767,101 @@ impl NeatGoldTradingSystem {
         }
     }
 
-    /// Chuẩn bị dữ liệu đầu vào cho neural network với advanced indicators
-    pub fn prepare_gold_market_features(&self, day_index: usize, lookback: usize) -> Vec<f64> {
+    /// Chuẩn bị dữ liệu đầu vào cho neural network với dynamic indicators
+    pub fn prepare_gold_market_features(&self, day_index: usize) -> Vec<f64> {
         let mut features = Vec::new();
         
-        if day_index >= lookback && day_index < self.market_data.len() {
-            // Basic OHLCV features (lookback days)
-            for i in (day_index - lookback + 1)..=day_index {
-                let data = &self.market_data[i];
+        // Basic OHLCV features (nếu được bật)
+        if self.indicator_config.enable_basic_ohlcv {
+            let lookback = self.indicator_config.lookback_days;
+            
+            if day_index >= lookback && day_index < self.market_data.len() {
+                for i in (day_index - lookback + 1)..=day_index {
+                    let data = &self.market_data[i];
+                    features.extend_from_slice(&[
+                        data.close_price / 1000.0,    // Normalize giá vàng
+                        data.volume / 100000.0,       // Normalize volume vàng
+                    ]);
+                }
+            } else {
+                // Fallback với dữ liệu hiện tại
+                let current = &self.market_data[day_index.min(self.market_data.len() - 1)];
+                for _ in 0..lookback {
+                    features.extend_from_slice(&[
+                        current.close_price / 1000.0,
+                        current.volume / 100000.0,
+                    ]);
+                }
+            }
+        }
+        
+        // Advanced Technical Indicators (chỉ tính nếu có indicator nào được bật)
+        if self.indicator_config.enable_ma_30 || 
+           self.indicator_config.enable_ma_cross || 
+           self.indicator_config.enable_rsi ||
+           self.indicator_config.enable_bollinger_bands ||
+           self.indicator_config.enable_volatility ||
+           self.indicator_config.enable_price_momentum ||
+           self.indicator_config.enable_volume_trend {
+            
+            let indicators = self.calculate_gold_indicators(day_index, 
+                                                           self.indicator_config.lookback_days);
+            
+            // Thêm các indicators đã được bật
+            if self.indicator_config.enable_ma_30 {
                 features.extend_from_slice(&[
-                    data.close_price / 1000.0,    // Normalize giá vàng
-                    data.volume / 100000.0,       // Normalize volume vàng
+                    indicators.ma_high_30 / 1000.0,
+                    indicators.ma_low_30 / 1000.0,
                 ]);
             }
             
-            // Advanced Technical Indicators
-            let indicators = self.calculate_gold_indicators(day_index, lookback);
-            features.extend_from_slice(&[
-                indicators.ma_high_30 / 1000.0,
-                indicators.ma_low_30 / 1000.0,
-                indicators.ma_50 / 1000.0,
-                indicators.ma_200 / 1000.0,
-                indicators.ma_cross_signal,     // Đã chuẩn hóa -1 to 1
-                indicators.rsi,                 // Đã chuẩn hóa 0 to 1
-                indicators.bb_position,
-                indicators.volatility,
-                indicators.price_momentum,
-                indicators.volume_trend,
-            ]);
-        } else {
-            // Fallback với dữ liệu hiện tại nếu không đủ lookback
+            if self.indicator_config.enable_ma_cross {
+                features.extend_from_slice(&[
+                    indicators.ma_50 / 1000.0,
+                    indicators.ma_200 / 1000.0,
+                    indicators.ma_cross_signal,     // Đã chuẩn hóa -1 to 1
+                ]);
+            }
+            
+            if self.indicator_config.enable_rsi {
+                features.push(indicators.rsi);      // Đã chuẩn hóa 0 to 1
+            }
+            
+            if self.indicator_config.enable_bollinger_bands {
+                features.push(indicators.bb_position);
+            }
+            
+            if self.indicator_config.enable_volatility {
+                features.push(indicators.volatility);
+            }
+            
+            if self.indicator_config.enable_price_momentum {
+                features.push(indicators.price_momentum);
+            }
+            
+            if self.indicator_config.enable_volume_trend {
+                features.push(indicators.volume_trend);
+            }
+        }
+        
+        // Đảm bảo luôn có ít nhất 1 feature
+        if features.is_empty() {
             let current = &self.market_data[day_index.min(self.market_data.len() - 1)];
-            features.extend_from_slice(&[
-                current.open_price / 1000.0,
-                current.high_price / 1000.0,
-                current.low_price / 1000.0,
-                current.close_price / 1000.0,
-                current.volume / 100000.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            ]);
+            features.push(current.close_price / 1000.0);
         }
         
         features
     }
 
-    /// Tạo quần thể ban đầu
+    /// Tạo quần thể ban đầu với dynamic feature count
     pub fn create_initial_population(&self) -> Vec<GoldTradingBot> {
         let mut population = Vec::new();
+        let feature_count = self.indicator_config.calculate_feature_count();
+        
+        println!("Creating population with {} input features", feature_count);
         
         for i in 0..self.population_size {
-            // 25 input features cho vàng với advanced indicators
-            let network = Network::new(25, 1);
+            let network = Network::new(feature_count, 1);
             let bot = GoldTradingBot::new(i, network, self.initial_balance);
             population.push(bot);
         }
@@ -574,8 +871,6 @@ impl NeatGoldTradingSystem {
 
     /// Chạy simulation cho một thế hệ
     pub fn run_simulation(&self, population: &mut Vec<GoldTradingBot>) {
-        let lookback = 5;
-        
         for bot in population.iter_mut() {
             // Reset portfolio
             bot.portfolio = GoldPortfolio::new(self.initial_balance);
@@ -586,8 +881,8 @@ impl NeatGoldTradingSystem {
                     continue; // Bỏ qua ngày đầu tiên
                 }
                 
-                // Chuẩn bị features với advanced indicators
-                let features = self.prepare_gold_market_features(day_index, lookback);
+                // Chuẩn bị features với dynamic indicators
+                let features = self.prepare_gold_market_features(day_index);
                 
                 // Bot đưa ra quyết định
                 let action = bot.make_decision(&features);
@@ -705,7 +1000,8 @@ impl NeatGoldTradingSystem {
         println!("Trade Percentage: {}%", self.trade_percentage * 100.0);
         println!("Elite: {}%, Mutation: {}%", self.elite_percentage * 100.0, self.mutation_percentage * 100.0);
         println!("Gold Market Data: {} days", self.market_data.len());
-        println!("Advanced Indicators: 2MA30, MA Cross (50/200), RSI, BB, Volatility");
+        println!("Strategy: {}", self.get_strategy_info());
+        println!("Active Indicators: {:?}", self.indicator_config.get_active_indicators());
         println!();
 
         let mut population = self.create_initial_population();
@@ -786,16 +1082,40 @@ impl NeatGoldTradingSystem {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("NEAT Gold Trading Bot System");
-    println!("============================");
+    println!("NEAT Gold Trading Bot System with Dynamic Indicators");
+    println!("====================================================");
     
-    // Khởi tạo hệ thống trading vàng
-    let mut gold_trading_system = NeatGoldTradingSystem::new(
+    // Demo các strategy config khác nhau
+    println!("\n=== AVAILABLE STRATEGIES ===");
+    let basic_config = IndicatorConfig::basic_strategy();
+    let advanced_config = IndicatorConfig::advanced_strategy();
+    let momentum_config = IndicatorConfig::momentum_strategy();
+    let trend_config = IndicatorConfig::trend_following_strategy();
+    
+    println!("1. Basic Strategy: {} features, indicators: {:?}", 
+             basic_config.calculate_feature_count(), basic_config.get_active_indicators());
+    println!("2. Advanced Strategy: {} features, indicators: {:?}", 
+             advanced_config.calculate_feature_count(), advanced_config.get_active_indicators());
+    println!("3. Momentum Strategy: {} features, indicators: {:?}", 
+             momentum_config.calculate_feature_count(), momentum_config.get_active_indicators());
+    println!("4. Trend Following Strategy: {} features, indicators: {:?}", 
+             trend_config.calculate_feature_count(), trend_config.get_active_indicators());
+    
+    // Chọn strategy để chạy - có thể thay đổi strategy ở đây
+    let selected_strategy = advanced_config; // Thay đổi strategy tại đây
+    
+    println!("\n=== SELECTED STRATEGY ===");
+    println!("Running with: {} features", selected_strategy.calculate_feature_count());
+    println!("Active indicators: {:?}", selected_strategy.get_active_indicators());
+    
+    // Khởi tạo hệ thống trading vàng với strategy đã chọn
+    let mut gold_trading_system = NeatGoldTradingSystem::new_with_config(
         50,      // 50 bots trong quần thể
         10000.0, // $10,000 ban đầu
-        0.02,    // 2% mỗi lần giao dịch (thận trọng hơn với vàng)
+        0.02,    // 2% mỗi lần giao dịch
         0.10,    // Giữ lại 10% elite
         0.20,    // 20% mutation
+        selected_strategy,
     );
     
     // Load dữ liệu vàng
@@ -803,6 +1123,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Chạy evolution cho 50 thế hệ
     gold_trading_system.run_evolution(50)?;
+    
+    println!("\n=== STRATEGY COMPARISON DEMO ===");
+    println!("You can easily switch strategies by modifying the 'selected_strategy' variable in main()");
+    println!("Each strategy will create different neural network architectures automatically!");
     
     println!("\nGold Evolution completed successfully!");
     println!("Check models/ folder for saved neural networks and statistics.");
