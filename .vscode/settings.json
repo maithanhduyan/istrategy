@@ -25,5 +25,17 @@
             "other": true,
             "comments": false
         }
-    }
+    },
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "editor.autoIndent": "full",
+        "editor.wordBasedSuggestions": "off"
+    },
+    "rust-analyzer.checkOnSave.command": "check",
+    "rust-analyzer.cargo.allFeatures": true,
+    "rust-analyzer.procMacro.enable": true,
+    "rust-analyzer.diagnostics.enable": true
 }
