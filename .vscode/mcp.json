@@ -6,8 +6,15 @@
         "chromadb-mcp": {
             "url": "http://localhost:3003/mcp/"
         },
-        "test-chromadb-mcp": {
+        "postgres-mcp": {
             "url": "http://localhost:3004/mcp/"
-        }
+        },
+        "sequentialthinking": {
+            "type": "stdio",
+            "command": "node",
+            "args": [
+                "${workspaceFolder}\\services\\utils-mcp\\src\\sequentialthinking\\dist\\index.js"
+            ]
+        },
     }
 }
