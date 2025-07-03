@@ -1,3 +1,8 @@
+# training result
+training_results/
+final_results/
+data/
+
 # Logs
 logs
 *.log
