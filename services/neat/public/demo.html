@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Demo - NEAT Monitoring</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .demo-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .demo-section h2 {
+            margin-top: 0;
+            color: #ffeb3b;
+        }
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px;
+        }
+        .connected {
+            background: #4caf50;
+            color: white;
+        }
+        .disconnected {
+            background: #f44336;
+            color: white;
+        }
+        .log {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .error-demo { background: rgba(244, 67, 54, 0.1); }
+        .warning-demo { background: rgba(255, 152, 0, 0.1); }
+        .performance-demo { background: rgba(76, 175, 80, 0.1); }
+        .action-demo { background: rgba(33, 150, 243, 0.1); }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffeb3b;
+        }
+        input {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            margin: 5px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 NEAT Monitoring - Live Demo</h1>
+        
+        <div class="demo-section">
+            <h2>📡 Connection Status</h2>
+            <div>
+                <span id="connectionStatus" class="status disconnected">Disconnected</span>
+                <input type="text" id="apiKeyInput" placeholder="Enter API Key" value="mk_lzb1eubaamcmtxg4o">
+                <input type="text" id="websiteInput" placeholder="Website URL" value="https://demo.com">
+                <button onclick="connectWebSocket()">Connect</button>
+                <button onclick="disconnectWebSocket()">Disconnect</button>
+            </div>
+            <div class="log" id="connectionLog">Waiting for connection...</div>
+        </div>
+
+        <div class="demo-section error-demo">
+            <h2>🚨 Error Monitoring Demo</h2>
+            <button onclick="sendError()">Generate JavaScript Error</button>
+            <button onclick="sendCriticalError()">Critical Error</button>
+            <button onclick="sendNetworkError()">Network Error</button>
+            <div class="log" id="errorLog">No errors sent yet...</div>
+        </div>
+
+        <div class="demo-section warning-demo">
+            <h2>⚠️ Warning Monitoring Demo</h2>
+            <button onclick="sendWarning()">Console Warning</button>
+            <button onclick="sendDeprecationWarning()">Deprecation Warning</button>
+            <div class="log" id="warningLog">No warnings sent yet...</div>
+        </div>
+
+        <div class="demo-section performance-demo">
+            <h2>📊 Performance Monitoring Demo</h2>
+            <button onclick="sendPerformanceData()">Send Performance Metrics</button>
+            <button onclick="sendSlowPageLoad()">Simulate Slow Load</button>
+            <button onclick="sendMemoryUsage()">Memory Usage</button>
+            <div class="log" id="performanceLog">No performance data sent yet...</div>
+        </div>
+
+        <div class="demo-section action-demo">
+            <h2>👤 User Action Tracking Demo</h2>
+            <button onclick="sendUserAction('click', 'buy-button')">User Click</button>
+            <button onclick="sendUserAction('scroll', 'page-bottom')">Page Scroll</button>
+            <button onclick="sendUserAction('form-submit', 'contact-form')">Form Submit</button>
+            <div class="log" id="actionLog">No user actions sent yet...</div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📈 Real-time Stats</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="errorCount">0</div>
+                    <div>Errors Sent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="warningCount">0</div>
+                    <div>Warnings Sent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="performanceCount">0</div>
+                    <div>Performance Events</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="actionCount">0</div>
+                    <div>User Actions</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let stats = { errors: 0, warnings: 0, performance: 0, actions: 0 };
+
+        function connectWebSocket() {
+            const apiKey = document.getElementById('apiKeyInput').value;
+            const website = document.getElementById('websiteInput').value;
+            
+            if (!apiKey) {
+                alert('Please enter API key');
+                return;
+            }
+
+            try {
+                ws = new WebSocket(`ws://localhost:3000?apiKey=${apiKey}&website=${encodeURIComponent(website)}`);
+                
+                ws.onopen = function() {
+                    updateConnectionStatus(true);
+                    log('connectionLog', 'WebSocket connected successfully!', 'success');
+                };
+
+                ws.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    log('connectionLog', `Received: ${JSON.stringify(data, null, 2)}`, 'info');
+                };
+
+                ws.onclose = function() {
+                    updateConnectionStatus(false);
+                    log('connectionLog', 'WebSocket connection closed', 'warning');
+                };
+
+                ws.onerror = function(error) {
+                    log('connectionLog', `WebSocket error: ${error}`, 'error');
+                };
+
+            } catch (error) {
+                log('connectionLog', `Failed to connect: ${error.message}`, 'error');
+            }
+        }
+
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            status.textContent = connected ? 'Connected' : 'Disconnected';
+            status.className = `status ${connected ? 'connected' : 'disconnected'}`;
+        }
+
+        function sendMessage(message) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('WebSocket not connected. Please connect first.');
+                return;
+            }
+            ws.send(JSON.stringify(message));
+        }
+
+        function sendError() {
+            const message = {
+                type: 'error',
+                error: 'TypeError: Cannot read property "length" of undefined',
+                stack: 'Error at getUserData (app.js:42:15)\\n    at onClick (button.js:8:3)',
+                url: window.location.href,
+                line: 42,
+                column: 15,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            sendMessage(message);
+            log('errorLog', `Sent error: ${message.error}`, 'error');
+            updateStats('errors');
+        }
+
+        function sendCriticalError() {
+            const message = {
+                type: 'error',
+                error: 'CRITICAL: Payment processing failed',
+                stack: 'Error at processPayment (payment.js:156:23)\\n    at checkout (cart.js:89:12)',
+                url: window.location.href,
+                severity: 'critical',
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            sendMessage(message);
+            log('errorLog', `Sent CRITICAL error: ${message.error}`, 'error');
+            updateStats('errors');
+        }
+
+        function sendNetworkError() {
+            const message = {
+                type: 'error',
+                error: 'NetworkError: Failed to fetch user data',
+                stack: 'Error at fetch (api.js:23:8)\\n    at loadUserProfile (user.js:67:15)',
+                url: window.location.href,
+                network: true,
+                statusCode: 500,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            sendMessage(message);
+            log('errorLog', `Sent network error: ${message.error}`, 'error');
+            updateStats('errors');
+        }
+
+        function sendWarning() {
+            const message = {
+                type: 'warning',
+                warning: 'Deprecated function call: getUserData() will be removed in v2.0',
+                url: window.location.href,
+                line: 156,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            sendMessage(message);
+            log('warningLog', `Sent warning: ${message.warning}`, 'warning');
+            updateStats('warnings');
+        }
+
+        function sendDeprecationWarning() {
+            const message = {
+                type: 'warning',
+                warning: 'jQuery 1.x is deprecated, please upgrade to 3.x',
+                category: 'deprecation',
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            sendMessage(message);
+            log('warningLog', `Sent deprecation warning: ${message.warning}`, 'warning');
+            updateStats('warnings');
+        }
+
+        function sendPerformanceData() {
+            const message = {
+                type: 'performance',
+                metrics: {
+                    pageLoadTime: Math.random() * 2000 + 500, // 500-2500ms
+                    domContentLoaded: Math.random() * 1000 + 200, // 200-1200ms
+                    firstContentfulPaint: Math.random() * 1500 + 300,
+                    memoryUsage: {
+                        used: Math.floor(Math.random() * 50) + 20, // 20-70MB
+                        total: 100
+                    },
+                    resourceCount: Math.floor(Math.random() * 50) + 10,
+                    networkType: '4g'
+                },
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            sendMessage(message);
+            log('performanceLog', `Sent performance data: Load time ${message.metrics.pageLoadTime.toFixed(0)}ms`, 'info');
+            updateStats('performance');
+        }
+
+        function sendSlowPageLoad() {
+            const message = {
+                type: 'performance',
+                metrics: {
+                    pageLoadTime: 8500, // Very slow
+                    domContentLoaded: 6200,
+                    firstContentfulPaint: 4100,
+                    memoryUsage: { used: 85, total: 100 },
+                    resourceCount: 127,
+                    networkType: '3g'
+                },
+                warning: 'Slow page load detected',
+                url: window.location.href,
+                timestamp: new Date().toISOString()
+            };
+            sendMessage(message);
+            log('performanceLog', `Sent SLOW performance data: ${message.metrics.pageLoadTime}ms`, 'warning');
+            updateStats('performance');
+        }
+
+        function sendMemoryUsage() {
+            const message = {
+                type: 'performance',
+                metrics: {
+                    memoryUsage: {
+                        used: Math.floor(Math.random() * 40) + 30,
+                        total: 100,
+                        details: {
+                            heapUsed: Math.floor(Math.random() * 30) + 15,
+                            heapTotal: 45
+                        }
+                    }
+                },
+                category: 'memory',
+                url: window.location.href,
+                timestamp: new Date().toISOString()
+            };
+            sendMessage(message);
+            log('performanceLog', `Sent memory usage: ${message.metrics.memoryUsage.used}%`, 'info');
+            updateStats('performance');
+        }
+
+        function sendUserAction(action, element) {
+            const message = {
+                type: 'user_action',
+                action: action,
+                element: element,
+                data: {
+                    x: Math.floor(Math.random() * 1000),
+                    y: Math.floor(Math.random() * 600),
+                    timestamp: Date.now(),
+                    sessionId: 'demo_session_' + Date.now()
+                },
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            sendMessage(message);
+            log('actionLog', `Sent user action: ${action} on ${element}`, 'info');
+            updateStats('actions');
+        }
+
+        function log(elementId, message, type = 'info') {
+            const logElement = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : 
+                          type === 'warning' ? '#ffa726' : 
+                          type === 'success' ? '#4caf50' : '#64b5f6';
+            
+            logElement.innerHTML += `<div style="color: ${color}; margin: 5px 0;">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStats(type) {
+            stats[type]++;
+            const elementId = type === 'errors' ? 'errorCount' :
+                              type === 'warnings' ? 'warningCount' :
+                              type === 'performance' ? 'performanceCount' :
+                              'actionCount';
+            document.getElementById(elementId).textContent = stats[type];
+        }
+
+        // Auto-connect on page load
+        window.onload = function() {
+            // Auto-connect after 1 second
+            setTimeout(connectWebSocket, 1000);
+        };
+    </script>
+</body>
+</html>

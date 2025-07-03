@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEAT Server - Monitoring Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .panel {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #404040;
+        }
+        
+        .panel h2 {
+            margin-top: 0;
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            background: #3d3d3d;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #ccc;
+            margin-top: 5px;
+        }
+        
+        .log-container {
+            height: 300px;
+            overflow-y: auto;
+            background: #1e1e1e;
+            border: 1px solid #404040;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-left: 3px solid #666;
+            padding-left: 10px;
+        }
+        
+        .log-error {
+            border-left-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+        
+        .log-warning {
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.1);
+        }
+        
+        .log-info {
+            border-left-color: #2196f3;
+            background: rgba(33, 150, 243, 0.1);
+        }
+        
+        .log-performance {
+            border-left-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        
+        .log-action {
+            border-left-color: #9c27b0;
+            background: rgba(156, 39, 176, 0.1);
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            margin-right: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .timestamp {
+            color: #888;
+            font-size: 11px;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .status-connected {
+            color: #4CAF50;
+        }
+        
+        .status-disconnected {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 NEAT Server - Monitoring Dashboard</h1>
+    
+    <div class="controls">
+        <button onclick="refreshData()">Refresh Data</button>
+        <button onclick="clearLogs()">Clear Display</button>
+        <button onclick="toggleAutoRefresh()" id="autoRefreshBtn">Enable Auto-Refresh</button>
+        <span id="connectionStatus" class="status-disconnected">⚫ Disconnected</span>
+    </div>
+    
+    <div class="dashboard">
+        <div class="panel">
+            <h2>📊 Server Statistics</h2>
+            <div class="stats" id="serverStats">
+                <div class="stat-item">
+                    <div class="stat-value" id="clientCount">0</div>
+                    <div class="stat-label">Connected Clients</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalErrors">0</div>
+                    <div class="stat-label">Total Errors</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalWarnings">0</div>
+                    <div class="stat-label">Total Warnings</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalUserActions">0</div>
+                    <div class="stat-label">User Actions</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2>🚨 Recent Errors</h2>
+            <div class="log-container" id="errorsLog"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>⚠️ Recent Warnings</h2>
+            <div class="log-container" id="warningsLog"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>👤 User Actions</h2>
+            <div class="log-container" id="actionsLog"></div>
+        </div>
+        
+        <div class="panel full-width">
+            <h2>📈 Performance Data</h2>
+            <div class="log-container" id="performanceLog"></div>
+        </div>
+        
+        <div class="panel full-width">
+            <h2>ℹ️ System Information</h2>
+            <div class="log-container" id="infoLog"></div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        let isAutoRefresh = false;
+
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/logs');
+                const data = await response.json();
+                updateDashboard(data);
+                updateConnectionStatus(true);
+                return data;
+            } catch (error) {
+                console.error('Failed to fetch logs:', error);
+                updateConnectionStatus(false);
+                return null;
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update statistics
+            document.getElementById('clientCount').textContent = data.clientCount || 0;
+            document.getElementById('totalErrors').textContent = data.logs.summary.totalErrors || 0;
+            document.getElementById('totalWarnings').textContent = data.logs.summary.totalWarnings || 0;
+            document.getElementById('totalUserActions').textContent = data.logs.summary.totalUserActions || 0;
+
+            // Update logs
+            updateLogContainer('errorsLog', data.logs.recent.errors, 'error');
+            updateLogContainer('warningsLog', data.logs.recent.warnings, 'warning');
+            updateLogContainer('actionsLog', data.logs.recent.userActions, 'action');
+            updateLogContainer('performanceLog', data.logs.recent.performance, 'performance');
+            updateLogContainer('infoLog', data.logs.recent.info, 'info');
+        }
+
+        function updateLogContainer(containerId, logs, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            if (!logs || logs.length === 0) {
+                container.innerHTML = '<div style="color: #666; font-style: italic;">No data available</div>';
+                return;
+            }
+
+            logs.forEach(log => {
+                const entry = document.createElement('div');
+                entry.className = `log-entry log-${type}`;
+                
+                let content = '';
+                switch(type) {
+                    case 'error':
+                        content = `<strong>Error:</strong> ${log.error}<br>
+                                  <small>Client: ${log.clientIP} | URL: ${log.url || 'N/A'}</small>`;
+                        break;
+                    case 'warning':
+                        content = `<strong>Warning:</strong> ${log.warning}<br>
+                                  <small>Client: ${log.clientIP}</small>`;
+                        break;
+                    case 'action':
+                        content = `<strong>Action:</strong> ${log.action} on ${log.element}<br>
+                                  <small>Client: ${log.clientIP} | Data: ${JSON.stringify(log.data || {})}</small>`;
+                        break;
+                    case 'performance':
+                        content = `<strong>Performance:</strong><br>
+                                  Page Load: ${log.metrics.pageLoadTime?.toFixed(2)}ms<br>
+                                  Memory: ${Math.round((log.metrics.memoryUsage?.used || 0) / 1024)}KB<br>
+                                  <small>Client: ${log.clientIP}</small>`;
+                        break;
+                    case 'info':
+                        content = `<strong>Info:</strong> ${log.info}<br>
+                                  <small>Client: ${log.clientIP} | Details: ${JSON.stringify(log.details || {})}</small>`;
+                        break;
+                }
+                
+                entry.innerHTML = `${content}<div class="timestamp">${new Date(log.timestamp).toLocaleString()}</div>`;
+                container.appendChild(entry);
+            });
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            if (connected) {
+                status.textContent = '🟢 Connected';
+                status.className = 'status-connected';
+            } else {
+                status.textContent = '🔴 Disconnected';
+                status.className = 'status-disconnected';
+            }
+        }
+
+        function refreshData() {
+            fetchLogs();
+        }
+
+        function clearLogs() {
+            const containers = ['errorsLog', 'warningsLog', 'actionsLog', 'performanceLog', 'infoLog'];
+            containers.forEach(id => {
+                document.getElementById(id).innerHTML = '<div style="color: #666; font-style: italic;">Logs cleared</div>';
+            });
+        }
+
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (isAutoRefresh) {
+                clearInterval(autoRefreshInterval);
+                btn.textContent = 'Enable Auto-Refresh';
+                isAutoRefresh = false;
+            } else {
+                autoRefreshInterval = setInterval(fetchLogs, 3000); // Refresh every 3 seconds
+                btn.textContent = 'Disable Auto-Refresh';
+                isAutoRefresh = true;
+            }
+        }
+
+        // Initial load
+        fetchLogs();
+        
+        // Auto-refresh every 5 seconds initially
+        setTimeout(() => {
+            toggleAutoRefresh();
+        }, 1000);
+    </script>
+</body>
+</html>
