@@ -5,7 +5,7 @@ use rand;
 #[derive(Debug, Clone)]
 pub struct Node {
     pub bias: f64,
-    pub squash: fn(f64, Option<bool>) -> f64,
+    pub squash: fn(f64, bool) -> f64,
     pub node_type: String,
     pub activation: f64,
     pub state: f64,
