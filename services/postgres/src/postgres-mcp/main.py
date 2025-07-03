@@ -28,6 +28,35 @@ app = Server("postgres-mcp")
 postgres_pool = None
 
 
+async def wait_for_postgres_and_pool(max_retries=10, delay=2):
+    """Đợi kết nối với PostgreSQL, thử lại nhiều lần và khởi tạo connection pool."""
+    import time
+    from psycopg2 import pool
+
+    for attempt in range(1, max_retries + 1):
+        logger.info(f"Thử kết nối PostgreSQL (lần {attempt}/{max_retries})...")
+        try:
+            p = pool.SimpleConnectionPool(
+                minconn=1,
+                maxconn=10,
+                host="localhost",
+                port=5432,
+                user="postgres",
+                password="postgres#2025",
+                database="postgres",
+            )
+            # Test lấy 1 connection
+            conn = p.getconn()
+            p.putconn(conn)
+            logger.info("Kết nối PostgreSQL và khởi tạo pool thành công!")
+            return p
+        except Exception as e:
+            logger.warning(f"Kết nối thất bại: {e}")
+            time.sleep(delay)
+    logger.error("Không thể kết nối PostgreSQL sau nhiều lần thử!")
+    return None
+
+
 def get_server_status() -> str:
     """Get the current server status."""
     return "Postgres MCP Server is running successfully!"
@@ -93,42 +122,55 @@ async def postgres_list_databases():
 
 async def postgres_list_schemas(database: str):
     """Liệt kê tất cả schemas trong một database cụ thể."""
-    import psycopg2
-
+    global postgres_pool
+    if postgres_pool is None:
+        return {
+            "success": False,
+            "message": "Postgres connection pool is not initialized.",
+        }
+    conn = None
     try:
-        # Kết nối trực tiếp đến database được chỉ định
-        conn = psycopg2.connect(
-            host="localhost",
-            port=5432,
-            user="postgres",
-            password="postgres#2025",
-            database=database,
-        )
+        conn = postgres_pool.getconn()
+        if conn is None:
+            return {"success": False, "message": "No available connection in the pool."}
+        # Đổi database nếu cần
+        if conn.info.dbname != database:
+            conn.set_isolation_level(0)
+            cursor = conn.cursor()
+            cursor.execute(
+                f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s AND pid <> pg_backend_pid();",
+                (database,),
+            )
+            cursor.close()
+            conn.close()
+            conn = postgres_pool.getconn()
         cursor = conn.cursor()
         query = "SELECT schema_name FROM information_schema.schemata;"
         cursor.execute(query)
         rows = cursor.fetchall()
         schemas = [row[0] for row in rows]
         cursor.close()
-        conn.close()
         return {"success": True, "schemas": schemas}
     except Exception as e:
         return {"success": False, "message": str(e)}
+    finally:
+        if conn is not None:
+            postgres_pool.putconn(conn)
 
 
 async def postgres_list_tables(database: str, schema: str = "public"):
     """Liệt kê tất cả tables trong một schema cụ thể của database."""
-    import psycopg2
-
+    global postgres_pool
+    if postgres_pool is None:
+        return {
+            "success": False,
+            "message": "Postgres connection pool is not initialized.",
+        }
+    conn = None
     try:
-        # Kết nối trực tiếp đến database được chỉ định
-        conn = psycopg2.connect(
-            host="localhost",
-            port=5432,
-            user="postgres",
-            password="postgres#2025",
-            database=database,
-        )
+        conn = postgres_pool.getconn()
+        if conn is None:
+            return {"success": False, "message": "No available connection in the pool."}
         cursor = conn.cursor()
         query = """
             SELECT table_name 
@@ -140,25 +182,27 @@ async def postgres_list_tables(database: str, schema: str = "public"):
         rows = cursor.fetchall()
         tables = [row[0] for row in rows]
         cursor.close()
-        conn.close()
         return {"success": True, "tables": tables}
     except Exception as e:
         return {"success": False, "message": str(e)}
+    finally:
+        if conn is not None:
+            postgres_pool.putconn(conn)
 
 
 async def postgres_table_structure(database: str, table: str, schema: str = "public"):
     """Lấy cấu trúc của một table cụ thể trong database."""
-    import psycopg2
-
+    global postgres_pool
+    if postgres_pool is None:
+        return {
+            "success": False,
+            "message": "Postgres connection pool is not initialized.",
+        }
+    conn = None
     try:
-        # Kết nối trực tiếp đến database được chỉ định
-        conn = psycopg2.connect(
-            host="localhost",
-            port=5432,
-            user="postgres",
-            password="postgres#2025",
-            database=database,
-        )
+        conn = postgres_pool.getconn()
+        if conn is None:
+            return {"success": False, "message": "No available connection in the pool."}
         cursor = conn.cursor()
         query = """
             SELECT column_name, 
@@ -173,31 +217,32 @@ async def postgres_table_structure(database: str, table: str, schema: str = "pub
         cursor.execute(query, (schema, table, database))
         rows = cursor.fetchall()
         cursor.close()
-        conn.close()
         return {"success": True, "structure": rows}
     except Exception as e:
         return {"success": False, "message": str(e)}
+    finally:
+        if conn is not None:
+            postgres_pool.putconn(conn)
 
 
 async def postgres_table_data(
     database: str, table: str, schema: str = "public", limit: int = 100
 ):
     """Lấy dữ liệu của một table cụ thể trong database."""
-    import psycopg2
-
+    global postgres_pool
+    if postgres_pool is None:
+        return {
+            "success": False,
+            "message": "Postgres connection pool is not initialized.",
+        }
+    conn = None
     try:
-        # Kết nối trực tiếp đến database được chỉ định
-        conn = psycopg2.connect(
-            host="localhost",
-            port=5432,
-            user="postgres",
-            password="postgres#2025",
-            database=database,
-        )
-        cursor = conn.cursor()
-        # Sử dụng psycopg2's identifier escaping
+        conn = postgres_pool.getconn()
+        if conn is None:
+            return {"success": False, "message": "No available connection in the pool."}
         from psycopg2 import sql
 
+        cursor = conn.cursor()
         query = sql.SQL("SELECT * FROM {}.{} LIMIT %s").format(
             sql.Identifier(schema), sql.Identifier(table)
         )
@@ -205,28 +250,28 @@ async def postgres_table_data(
         rows = cursor.fetchall()
         columns = [desc[0] for desc in cursor.description] if cursor.description else []
         cursor.close()
-        conn.close()
         return {"success": True, "data": rows, "columns": columns}
     except Exception as e:
         return {"success": False, "message": str(e)}
+    finally:
+        if conn is not None:
+            postgres_pool.putconn(conn)
 
 
 async def postgres_execute_query(database: str, query: str, params: list = None):
     """Thực thi SQL query trong database được chỉ định."""
-    import psycopg2
-
+    global postgres_pool
+    if postgres_pool is None:
+        return {
+            "success": False,
+            "message": "Postgres connection pool is not initialized.",
+        }
+    conn = None
     try:
-        # Kết nối trực tiếp đến database được chỉ định
-        conn = psycopg2.connect(
-            host="localhost",
-            port=5432,
-            user="postgres",
-            password="postgres#2025",
-            database=database,
-        )
+        conn = postgres_pool.getconn()
+        if conn is None:
+            return {"success": False, "message": "No available connection in the pool."}
         cursor = conn.cursor()
-
-        # Kiểm tra loại query
         q = query.strip().upper()
         if not (
             q.startswith("SELECT") or q.startswith("WITH") or q.startswith("EXPLAIN")
@@ -235,24 +280,23 @@ async def postgres_execute_query(database: str, query: str, params: list = None)
                 "success": False,
                 "message": "Chỉ cho phép thực thi các câu lệnh SELECT, WITH hoặc EXPLAIN.",
             }
-
         if params:
             cursor.execute(query, params)
         else:
             cursor.execute(query)
-
         if cursor.description:
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             cursor.close()
-            conn.close()
             return {"success": True, "data": rows, "columns": columns}
         else:
             cursor.close()
-            conn.close()
             return {"success": True, "message": "Query thực thi thành công"}
     except Exception as e:
         return {"success": False, "message": str(e)}
+    finally:
+        if conn is not None:
+            postgres_pool.putconn(conn)
 
 
 async def postgres_health_check(database: str = "postgres"):
@@ -334,30 +378,111 @@ async def postgres_health_check(database: str = "postgres"):
         return {"success": False, "health_info": health_info, "message": str(e)}
 
 
-async def wait_for_postgres_and_pool(max_retries=10, delay=2):
-    """Đợi kết nối với PostgreSQL, thử lại nhiều lần và khởi tạo connection pool."""
-    for attempt in range(1, max_retries + 1):
-        logger.info(f"Thử kết nối PostgreSQL (lần {attempt}/{max_retries})...")
-        try:
-            p = pool.SimpleConnectionPool(
-                minconn=1,
-                maxconn=10,
-                host="localhost",
-                port=5432,
-                user="postgres",
-                password="postgres#2025",
-                database="postgres",
-            )
-            # Test lấy 1 connection
-            conn = p.getconn()
-            p.putconn(conn)
-            logger.info("Kết nối PostgreSQL và khởi tạo pool thành công!")
-            return p
-        except Exception as e:
-            logger.warning(f"Kết nối thất bại: {e}")
-            time.sleep(delay)
-    logger.error("Không thể kết nối PostgreSQL sau nhiều lần thử!")
-    return None
+async def postgres_database_stats(database: str):
+    """Lấy thống kê chi tiết về database."""
+    global postgres_pool
+    if postgres_pool is None:
+        return {
+            "success": False,
+            "message": "Postgres connection pool is not initialized.",
+        }
+    conn = None
+    try:
+        conn = postgres_pool.getconn()
+        if conn is None:
+            return {"success": False, "message": "No available connection in the pool."}
+        cursor = conn.cursor()
+
+        # Database basic info
+        cursor.execute("SELECT current_database(), current_user, version()")
+        db_info = cursor.fetchone()
+
+        # Database size
+        cursor.execute("SELECT pg_size_pretty(pg_database_size(current_database()))")
+        db_size = cursor.fetchone()[0]
+
+        # Table statistics (dùng đúng cột tablename của pg_tables)
+        cursor.execute(
+            """
+            SELECT 
+                schemaname,
+                COUNT(*) as table_count,
+                SUM(pg_total_relation_size(schemaname||'.'||tablename)) as total_size
+            FROM pg_tables 
+            WHERE schemaname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+            GROUP BY schemaname
+        """
+        )
+        schema_stats = cursor.fetchall()
+
+        # Connection statistics
+        cursor.execute(
+            """
+            SELECT 
+                state,
+                COUNT(*) as count
+            FROM pg_stat_activity 
+            WHERE datname = current_database()
+            GROUP BY state
+        """
+        )
+        connection_stats = cursor.fetchall()
+
+        # Index usage statistics (fix: dùng relname thay vì tablename nếu cần)
+        cursor.execute(
+            """
+            SELECT 
+                schemaname,
+                relname as table,
+                indexrelname as index,
+                idx_scan,
+                idx_tup_read,
+                idx_tup_fetch
+            FROM pg_stat_user_indexes 
+            ORDER BY idx_scan DESC
+            LIMIT 10
+        """
+        )
+        index_stats = cursor.fetchall()
+
+        cursor.close()
+        return {
+            "success": True,
+            "database_info": {
+                "name": db_info[0],
+                "user": db_info[1],
+                "version": db_info[2],
+                "size": db_size,
+            },
+            "schema_stats": [
+                {
+                    "schema": row[0],
+                    "table_count": row[1],
+                    "total_size": row[2] if row[2] else 0,
+                }
+                for row in schema_stats
+            ],
+            "connection_stats": [
+                {"state": row[0] or "unknown", "count": row[1]}
+                for row in connection_stats
+            ],
+            "top_indexes": [
+                {
+                    "schema": row[0],
+                    "table": row[1],
+                    "index": row[2],
+                    "scans": row[3],
+                    "tuples_read": row[4],
+                    "tuples_fetched": row[5],
+                }
+                for row in index_stats
+            ],
+        }
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+    finally:
+        if conn is not None:
+            postgres_pool.putconn(conn)
 
 
 @app.call_tool()
@@ -539,6 +664,61 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                         type="text", text=f"Health check failed: {result['message']}"
                     )
                 ]
+        case "postgres_database_stats":
+            db = arguments.get("database")
+            if not db:
+                return [
+                    types.TextContent(type="text", text="Missing 'database' argument")
+                ]
+            result = await postgres_database_stats(db)
+            if result["success"]:
+                db_info = result["database_info"]
+                schema_stats = result["schema_stats"]
+                connection_stats = result["connection_stats"]
+                top_indexes = result["top_indexes"]
+
+                # Format schema statistics
+                schema_text = "\n".join(
+                    [
+                        f"Schema: {s['schema']}, Tables: {s['table_count']}, Size: {s['total_size']} bytes"
+                        for s in schema_stats
+                    ]
+                )
+
+                # Format connection statistics
+                connection_text = "\n".join(
+                    [
+                        f"State: {c['state']}, Count: {c['count']}"
+                        for c in connection_stats
+                    ]
+                )
+
+                # Format index statistics
+                index_text = "\n".join(
+                    [
+                        f"Schema: {i['schema']}, Table: {i['table']}, Index: {i['index']}, Scans: {i['scans']}"
+                        for i in top_indexes
+                    ]
+                )
+
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=f"Database Statistics for {db}:\n\n"
+                        f"Basic Info:\n"
+                        f"- Name: {db_info['name']}\n"
+                        f"- User: {db_info['user']}\n"
+                        f"- Version: {db_info['version']}\n"
+                        f"- Size: {db_info['size']}\n\n"
+                        f"Schema Statistics:\n{schema_text}\n\n"
+                        f"Connection Statistics:\n{connection_text}\n\n"
+                        f"Top Indexes:\n{index_text}",
+                    )
+                ]
+            else:
+                return [
+                    types.TextContent(type="text", text=f"Error: {result['message']}")
+                ]
         case _:
             return [types.TextContent(type="text", text=f"Unknown tool: {name}")]
 
@@ -639,6 +819,15 @@ async def list_tools() -> list[types.Tool]:
                 "type": "object",
                 "properties": {"database": {"type": "string", "default": "postgres"}},
                 "required": [],
+            },
+        ),
+        types.Tool(
+            name="postgres_database_stats",
+            description="Get detailed statistics about the database.",
+            inputSchema={
+                "type": "object",
+                "properties": {"database": {"type": "string"}},
+                "required": ["database"],
             },
         ),
     ]
