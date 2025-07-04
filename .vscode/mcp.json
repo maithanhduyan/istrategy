@@ -16,13 +16,13 @@
         //         "${workspaceFolder}\\services\\utils-mcp\\src\\sequentialthinking\\dist\\index.js"
         //     ]
         // },
-        // "memory": {
-        //     "type": "stdio",
-        //     "command": "node",
-        //     "args": [
-        //         "${workspaceFolder}\\services\\utils-mcp\\src\\memory\\dist\\index.js"
-        //     ]
-        // },
+        "memory": {
+            "type": "stdio",
+            "command": "node",
+            "args": [
+                "${workspaceFolder}\\services\\utils-mcp\\src\\memory\\dist\\index.js"
+            ]
+        },
         "thinking-tools": {
             "type": "stdio",
             "command": "node",
