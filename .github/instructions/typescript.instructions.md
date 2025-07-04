@@ -36,3 +36,10 @@ After running ANY command, you MUST:
 NEVER move to next step without verification.
 **Chú trọng bằng chứng thực tế hơn là tuyên bố vô căn cứ**
 
+## Thinking Tools
+- Sequential → Lập kế hoạch phân tích
+- Systems → Hiểu toàn cục vấn đề
+- Root Cause → Tìm nguyên nhân gốc
+- Critical → Đánh giá giải pháp
+- Lateral → Tạo giải pháp sáng tạo
+- Comprehensive Analysis: Symptoms → Root Causes → Preventive Actions
