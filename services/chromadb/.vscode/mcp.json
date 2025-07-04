@@ -1,0 +1,11 @@
+{
+    "servers": {
+        "chromadb": {
+            "type": "stdio",
+            "command": "C:/Users/tiach/Downloads/istrategy/services/chromadb/.venv/Scripts/python.exe",
+            "args": [
+                "C:/Users/tiach/Downloads/istrategy/services/chromadb/src/chromadb-stdio/server.py"
+            ]
+        }
+    }
+}
