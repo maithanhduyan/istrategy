@@ -1,0 +1,71 @@
+{
+    // tasks.json
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Kill all Node.js processes",
+            "type": "shell",
+            "command": "kill",
+            "args": [
+                "-9",
+                "$(ps -ef | grep node | grep -v grep | awk '{print $2}')"
+            ],
+            "problemMatcher": [],
+            "windows": {
+                "command": "taskkill",
+                "args": [
+                    "/F",
+                    "/IM",
+                    "node.exe"
+                ]
+            },
+            "presentation": {
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "Kill Rust target/debug *.exe",
+            "type": "shell",
+            "command": "for",
+            "args": [
+                "/f",
+                "delims=",
+                "%f",
+                "in ('dir /b /s target\\debug\\*.exe') do taskkill /F /IM \"%~nxf\""
+            ],
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-Command",
+                    "Get-ChildItem -Path target/debug/*.exe | ForEach-Object { taskkill /F /IM $_.Name -ErrorAction SilentlyContinue }"
+                ]
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "Kill Rust target/release *.exe",
+            "type": "shell",
+            "command": "for",
+            "args": [
+                "/f",
+                "delims=",
+                "%f",
+                "in ('dir /b /s target\\release\\*.exe') do taskkill /F /IM \"%~nxf\""
+            ],
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-Command",
+                    "Get-ChildItem -Path target/release/*.exe | ForEach-Object { taskkill /F /IM $_.Name -ErrorAction SilentlyContinue }"
+                ]
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always"
+            }
+        }
+    ]
+}

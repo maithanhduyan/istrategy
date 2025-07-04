@@ -30,6 +30,11 @@
                 "${workspaceFolder}\\services\\utils-mcp\\src\\thinking\\dist\\index.js"
             ],
             "env": {}
+        },
+        "thinking": {
+            "type": "stdio",
+            "command": "${workspaceFolder}/services/tools-rs/target/release/thinking-tools.exe",
+            "args": []
         }
     }
 }

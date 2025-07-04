@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "sequentialthinking",
+    "arguments": {
+      "thought": "I need to analyze the problem of optimizing database performance",
+      "next_step_needed": true,
+      "step_number": 1,
+      "total_steps": 3,
+      "thinking_method": "sequential"
+    }
+  }
+}

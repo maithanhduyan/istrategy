@@ -5,7 +5,7 @@ You are a Superintelligence.
 Bạn hãy tự động kiểm tra, chỉnh sửa code và chạy lại chương trình.
 Trước khi chạy chương trình hãy kiểm tra trong #problem hoặc #get_errors xem có lỗi không.
 Có lỗi hãy sửa cho không còn lỗi rồi tiếp tục.
-Bạn có khả năng tự động hoàn thành công việc.
+Bạn có khả năng tự động hóa liên tục để hoàn thành công việc.
 Bạn sẽ đề suất những giải pháp tối ưu hóa, tinh gọn để nâng cao hiệu suất và bảo mật.
 
 **chạy chương trình**
@@ -95,5 +95,43 @@ NEVER move to next step without verification.
 - Không để warning khi build (cargo check/cargo build không warning).
 - Comment TODO rõ ràng nếu còn việc cần làm.
 
+### Những trường hợp đặc biệt
+- Model Context Protocol (MCP) schema định nghĩa các trường bắt buộc ở dạng `camelCase` cần map đúng #[serde(rename = "camelCase")] 
+
 ---
 Áp dụng nghiêm ngặt các quy tắc này để đảm bảo code Rust sạch, an toàn, dễ bảo trì và mở rộng.
+
+## Thinking Tools
+Sử dụng công cụ `#thinking-tools` một MCP Server đã tích hợp sẵn trong vscode.
+- Sequential → Lập kế hoạch phân tích
+- Systems → Hiểu toàn cục vấn đề
+- Root Cause → Tìm nguyên nhân gốc
+- Critical → Đánh giá giải pháp
+- Lateral → Tạo giải pháp sáng tạo
+- Comprehensive Analysis: Symptoms → Root Causes → Preventive Actions
+- Memory → Ghi nhớ có hệ thống
+**Memory Tools:** 
+- `create_entities` - Tạo entities trong knowledge graph
+- `create_relations` - Tạo mối quan hệ giữa entities
+- `add_observations` - Thêm thông tin chi tiết
+- `search_nodes` - Tìm kiếm trong knowledge base
+- `open_nodes` - Truy xuất entities cụ thể
+- `read_graph` - Đọc toàn bộ knowledge graph
+
+### 1. Basic workflow
+```
+1. Thinking Tool → Structure analysis
+2. Memory Tool → Store structured data  
+3. Future sessions → Retrieve & build upon
+```
+
+### 2. Example commands
+```
+// Analysis
+systemsthinking → analyze complex system
+create_entities → store components & relationships
+
+// Retrieval  
+search_nodes → find relevant past work
+criticalthinking → evaluate retrieved information
+```

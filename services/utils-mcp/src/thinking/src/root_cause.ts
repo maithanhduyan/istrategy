@@ -198,3 +198,4 @@ When to use:
 };
 
 export { ROOT_CAUSE_TOOL };
+export { ROOT_CAUSE_TOOL as ROOT_CAUSE_ANALYSIS_TOOL }; // Alias for snake_case compatibility
