@@ -135,3 +135,7 @@ create_entities → store components & relationships
 search_nodes → find relevant past work
 criticalthinking → evaluate retrieved information
 ```
+
+### Command line
+Trong Windows OS
+- Sử dụng ; cho PowerShell. Không sử dụng: && 

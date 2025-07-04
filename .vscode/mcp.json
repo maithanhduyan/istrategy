@@ -23,18 +23,25 @@
         //         "${workspaceFolder}\\services\\utils-mcp\\src\\memory\\dist\\index.js"
         //     ]
         // },
-        "thinking-tools": {
-            "type": "stdio",
-            "command": "node",
-            "args": [
-                "${workspaceFolder}\\services\\utils-mcp\\src\\thinking\\dist\\index.js"
-            ],
-            "env": {}
-        },
+        // "thinking-tools": {
+        //     "type": "stdio",
+        //     "command": "node",
+        //     "args": [
+        //         "${workspaceFolder}\\services\\utils-mcp\\src\\thinking\\dist\\index.js"
+        //     ],
+        //     "env": {}
+        // },
         "thinking": {
             "type": "stdio",
             "command": "${workspaceFolder}/services/tools-rs/target/release/thinking-tools.exe",
             "args": []
+        },
+        "chromadb": {
+            "type": "stdio",
+            "command": "C:/Users/tiach/Downloads/istrategy/services/chromadb/.venv/Scripts/python.exe",
+            "args": [
+                "C:/Users/tiach/Downloads/istrategy/services/chromadb/src/chromadb-stdio/server.py"
+            ]
         }
     }
 }

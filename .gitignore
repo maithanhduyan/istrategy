@@ -2,7 +2,6 @@
 training_results/
 final_results/
 data/
-
 # Logs
 logs
 *.log
@@ -144,3 +143,5 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 chromadb/
+chroma_db/
+!services/chromadb/src/chromadb-stdio/server.py
