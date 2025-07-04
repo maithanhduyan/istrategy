@@ -1,27 +1,35 @@
 {
     "servers": {
-        "qdrant-mcp": {
-            "url": "http://localhost:3002/mcp/"
-        },
-        "chromadb-mcp": {
-            "url": "http://localhost:3003/mcp/"
-        },
-        "postgres-mcp": {
-            "url": "http://localhost:3004/mcp/"
-        },
-        "sequentialthinking": {
+        // "qdrant-mcp": {
+        //     "url": "http://localhost:3002/mcp/"
+        // },
+        // "chromadb-mcp": {
+        //     "url": "http://localhost:3003/mcp/"
+        // },
+        // "postgres-mcp": {
+        //     "url": "http://localhost:3004/mcp/"
+        // },
+        // "sequentialthinking": {
+        //     "type": "stdio",
+        //     "command": "node",
+        //     "args": [
+        //         "${workspaceFolder}\\services\\utils-mcp\\src\\sequentialthinking\\dist\\index.js"
+        //     ]
+        // },
+        // "memory": {
+        //     "type": "stdio",
+        //     "command": "node",
+        //     "args": [
+        //         "${workspaceFolder}\\services\\utils-mcp\\src\\memory\\dist\\index.js"
+        //     ]
+        // },
+        "thinking-tools": {
             "type": "stdio",
             "command": "node",
             "args": [
-                "${workspaceFolder}\\services\\utils-mcp\\src\\sequentialthinking\\dist\\index.js"
-            ]
-        },
-        "memory": {
-            "type": "stdio",
-            "command": "node",
-            "args": [
-                "${workspaceFolder}\\services\\utils-mcp\\src\\memory\\dist\\index.js"
-            ]
-        },
+                "${workspaceFolder}\\services\\utils-mcp\\src\\thinking\\dist\\index.js"
+            ],
+            "env": {}
+        }
     }
 }
