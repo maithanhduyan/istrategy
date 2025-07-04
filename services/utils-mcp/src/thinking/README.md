@@ -53,6 +53,23 @@ Phân tích nguyên nhân gốc của vấn đề:
 
 ## Memory Tool Integration
 
+Tích hợp đầy đủ Memory Tools với tiền tố `memory_*` để quản lý Knowledge Graph:
+
+### Memory Tools Available
+
+#### Core CRUD Operations:
+- **`memory_create_entities`**: Tạo entities mới trong knowledge graph
+- **`memory_create_relations`**: Tạo relationships giữa entities  
+- **`memory_add_observations`**: Thêm observations vào entities
+- **`memory_delete_entities`**: Xóa entities và relations liên quan
+- **`memory_delete_observations`**: Xóa observations cụ thể
+- **`memory_delete_relations`**: Xóa relationships
+
+#### Query & Retrieval:
+- **`memory_read_graph`**: Đọc toàn bộ knowledge graph
+- **`memory_search_nodes`**: Tìm kiếm entities theo query
+- **`memory_open_nodes`**: Mở entities cụ thể theo tên
+
 ### Cách Sử Dụng Memory Tool Đúng Cách
 
 Memory tool trong dự án này sử dụng **Knowledge Graph** với 3 thành phần chính:
@@ -160,19 +177,27 @@ RCA Analysis → Causes & Effects → Problem Knowledge Base
 
 ```bash
 # Create structured entities
-create_entities
+memory_create_entities
 
 # Build relationships  
-create_relations
+memory_create_relations
 
 # Add detailed information
-add_observations
+memory_add_observations
 
 # Search knowledge
-search_nodes
+memory_search_nodes
 
 # Retrieve specific info
-open_nodes
+memory_open_nodes
+
+# Read entire graph
+memory_read_graph
+
+# Cleanup operations
+memory_delete_entities
+memory_delete_observations
+memory_delete_relations
 ```
 
 ### Integration Example Workflow

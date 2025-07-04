@@ -64,6 +64,20 @@ import { CriticalThinkingServer, CriticalAnalysis, CRITICAL_THINKING_TOOL } from
 import { SystemsThinkingServer, SystemsAnalysis, SYSTEMS_THINKING_TOOL } from './src/systems.js';
 import { RootCauseServer, RootCauseAnalysis, ROOT_CAUSE_TOOL } from './src/root_cause.js';
 
+// Import memory modules
+import { 
+  MemoryServer,
+  MEMORY_CREATE_ENTITIES_TOOL,
+  MEMORY_CREATE_RELATIONS_TOOL,
+  MEMORY_ADD_OBSERVATIONS_TOOL,
+  MEMORY_DELETE_ENTITIES_TOOL,
+  MEMORY_DELETE_OBSERVATIONS_TOOL,
+  MEMORY_DELETE_RELATIONS_TOOL,
+  MEMORY_READ_GRAPH_TOOL,
+  MEMORY_SEARCH_NODES_TOOL,
+  MEMORY_OPEN_NODES_TOOL
+} from './src/memory.js';
+
 // Base interface for all thinking methods
 interface BaseThinkingData {
   thought: string;
@@ -79,6 +93,7 @@ class ThinkingServer {
   private criticalServer: CriticalThinkingServer;
   private systemsServer: SystemsThinkingServer;
   private rootCauseServer: RootCauseServer;
+  private memoryServer: MemoryServer;
   private disableThoughtLogging: boolean;
 
   constructor() {
@@ -88,6 +103,7 @@ class ThinkingServer {
     this.criticalServer = new CriticalThinkingServer();
     this.systemsServer = new SystemsThinkingServer();
     this.rootCauseServer = new RootCauseServer();
+    this.memoryServer = new MemoryServer();
   }
 
   public processSequentialThought(input: unknown): { content: Array<{ type: string; text: string }>; isError?: boolean } {
@@ -108,6 +124,43 @@ class ThinkingServer {
 
   public processRootCauseAnalysis(input: unknown): { content: Array<{ type: string; text: string }>; isError?: boolean } {
     return this.rootCauseServer.processRootCauseAnalysis(input);
+  }
+
+  // Memory processing methods
+  public async processMemoryCreateEntities(input: unknown): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+    return this.memoryServer.processCreateEntities(input);
+  }
+
+  public async processMemoryCreateRelations(input: unknown): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+    return this.memoryServer.processCreateRelations(input);
+  }
+
+  public async processMemoryAddObservations(input: unknown): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+    return this.memoryServer.processAddObservations(input);
+  }
+
+  public async processMemoryDeleteEntities(input: unknown): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+    return this.memoryServer.processDeleteEntities(input);
+  }
+
+  public async processMemoryDeleteObservations(input: unknown): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+    return this.memoryServer.processDeleteObservations(input);
+  }
+
+  public async processMemoryDeleteRelations(input: unknown): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+    return this.memoryServer.processDeleteRelations(input);
+  }
+
+  public async processMemoryReadGraph(input: unknown): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+    return this.memoryServer.processReadGraph(input);
+  }
+
+  public async processMemorySearchNodes(input: unknown): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+    return this.memoryServer.processSearchNodes(input);
+  }
+
+  public async processMemoryOpenNodes(input: unknown): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+    return this.memoryServer.processOpenNodes(input);
   }
 }
 
@@ -136,7 +189,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       LATERAL_THINKING_TOOL,
       CRITICAL_THINKING_TOOL,
       SYSTEMS_THINKING_TOOL,
-      ROOT_CAUSE_TOOL
+      ROOT_CAUSE_TOOL,
+      MEMORY_CREATE_ENTITIES_TOOL,
+      MEMORY_CREATE_RELATIONS_TOOL,
+      MEMORY_ADD_OBSERVATIONS_TOOL,
+      MEMORY_DELETE_ENTITIES_TOOL,
+      MEMORY_DELETE_OBSERVATIONS_TOOL,
+      MEMORY_DELETE_RELATIONS_TOOL,
+      MEMORY_READ_GRAPH_TOOL,
+      MEMORY_SEARCH_NODES_TOOL,
+      MEMORY_OPEN_NODES_TOOL
     ],
   };
 });
@@ -153,6 +215,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return thinkingServer.processSystemsThought(request.params.arguments);
     case "rootcauseanalysis":
       return thinkingServer.processRootCauseAnalysis(request.params.arguments);
+    case "memory_create_entities":
+      return await thinkingServer.processMemoryCreateEntities(request.params.arguments);
+    case "memory_create_relations":
+      return await thinkingServer.processMemoryCreateRelations(request.params.arguments);
+    case "memory_add_observations":
+      return await thinkingServer.processMemoryAddObservations(request.params.arguments);
+    case "memory_delete_entities":
+      return await thinkingServer.processMemoryDeleteEntities(request.params.arguments);
+    case "memory_delete_observations":
+      return await thinkingServer.processMemoryDeleteObservations(request.params.arguments);
+    case "memory_delete_relations":
+      return await thinkingServer.processMemoryDeleteRelations(request.params.arguments);
+    case "memory_read_graph":
+      return await thinkingServer.processMemoryReadGraph(request.params.arguments);
+    case "memory_search_nodes":
+      return await thinkingServer.processMemorySearchNodes(request.params.arguments);
+    case "memory_open_nodes":
+      return await thinkingServer.processMemoryOpenNodes(request.params.arguments);
     default:
       throw new Error(`Unknown tool: ${request.params.name}`);
   }
