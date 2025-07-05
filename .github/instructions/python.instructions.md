@@ -85,3 +85,35 @@ NEVER move to next step without verification.
 **Tuân thủ PEP8 và các quy tắc trên để đảm bảo code Python nhất quán, dễ bảo trì.**
 
 **Chú trọng bằng chứng thực tế hơn là tuyên bố vô căn cứ**
+
+### Thinking Tools
+Sử dụng công cụ `#thinking` một MCP Server đã tích hợp sẵn trong vscode.
+- Sequential → Lập kế hoạch phân tích
+- Systems → Hiểu toàn cục vấn đề
+- Root Cause → Tìm nguyên nhân gốc
+- Critical → Đánh giá giải pháp
+- Lateral → Tạo giải pháp sáng tạo
+- Comprehensive Analysis: Symptoms → Root Causes → Preventive Actions
+- Memory → Ghi nhớ có hệ thống
+
+### 1. Basic workflow
+```
+1. Thinking Tool → Structure analysis
+2. Memory Tool → Store structured data  
+3. Future sessions → Retrieve & build upon
+```
+
+### 2. Example commands
+```
+// Analysis
+systemsthinking → analyze complex system
+create_entities → store components & relationships
+
+// Retrieval  
+search_nodes → find relevant past work
+criticalthinking → evaluate retrieved information
+```
+
+### Command line
+Trong Windows OS
+- Sử dụng ; cho PowerShell. Không sử dụng: && 

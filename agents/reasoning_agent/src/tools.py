@@ -32,14 +32,35 @@ class ToolExecutor:
             return f"Error executing {action}: {str(e)}"
 
     def _date_diff(self, args: List[str]) -> str:
-        """Calculate days between two dates"""
+        """Calculate days between two dates with precision"""
         if len(args) != 2:
             return "Error: date_diff requires 2 arguments (date1, date2)"
 
-        date1 = datetime.datetime.fromisoformat(args[0])
-        date2 = datetime.datetime.fromisoformat(args[1])
-        diff = abs((date2 - date1).days)
-        return str(diff)
+        try:
+            # Parse dates more precisely
+            date1_str, date2_str = args[0], args[1]
+            
+            # Handle different date formats
+            for fmt in ['%Y-%m-%d', '%Y/%m/%d', '%m/%d/%Y', '%d/%m/%Y']:
+                try:
+                    date1 = datetime.datetime.strptime(date1_str, fmt)
+                    date2 = datetime.datetime.strptime(date2_str, fmt)
+                    break
+                except ValueError:
+                    continue
+            else:
+                # Fallback to ISO format
+                date1 = datetime.datetime.fromisoformat(date1_str)
+                date2 = datetime.datetime.fromisoformat(date2_str)
+            
+            # Calculate difference with proper handling
+            diff = (date2 - date1).days
+            return str(abs(diff))
+            
+        except ValueError as e:
+            return f"Error: Invalid date format - {str(e)}"
+        except Exception as e:
+            return f"Error calculating date difference: {str(e)}"
 
     def _run_python(self, args: List[str]) -> str:
         """Execute Python code safely"""
@@ -49,6 +70,7 @@ class ToolExecutor:
         code = args[0]
         try:
             # Create safe globals with basic math functions
+            import math
             safe_globals = {
                 "__builtins__": {
                     "print": print,
@@ -61,8 +83,9 @@ class ToolExecutor:
                     "max": max,
                     "sum": sum,
                     "round": round,
+                    "__import__": __import__,  # Allow imports
                 },
-                "math": __import__("math"),
+                "math": math,  # Pre-import math module
             }
 
             # Capture output
@@ -129,15 +152,16 @@ class ToolExecutor:
             return f"Shell execution error: {str(e)}"
 
     def _math_calc(self, args: List[str]) -> str:
-        """Evaluate math expression"""
+        """Evaluate math expression with function support"""
         if len(args) != 1:
             return "Error: math_calc requires 1 argument (expression)"
 
         expression = args[0]
         try:
-            # Safe eval with only math operations
+            # Safe eval with math operations and functions
             import ast
             import operator
+            import math
 
             ops = {
                 ast.Add: operator.add,
@@ -148,15 +172,47 @@ class ToolExecutor:
                 ast.USub: operator.neg,
             }
 
+            # Supported functions
+            functions = {
+                'sqrt': math.sqrt,
+                'sin': math.sin,
+                'cos': math.cos,
+                'tan': math.tan,
+                'log': math.log,
+                'ln': math.log,
+                'abs': abs,
+                'round': round,
+                'floor': math.floor,
+                'ceil': math.ceil,
+                'exp': math.exp,
+                'pi': math.pi,
+                'e': math.e,
+            }
+
             def eval_expr(node):
                 if isinstance(node, ast.Constant):
                     return node.value
+                elif isinstance(node, ast.Name):
+                    # Handle constants like pi, e
+                    if node.id in functions:
+                        return functions[node.id]
+                    else:
+                        raise ValueError(f"Unknown variable: {node.id}")
                 elif isinstance(node, ast.BinOp):
                     return ops[type(node.op)](
                         eval_expr(node.left), eval_expr(node.right)
                     )
                 elif isinstance(node, ast.UnaryOp):
                     return ops[type(node.op)](eval_expr(node.operand))
+                elif isinstance(node, ast.Call):
+                    # Handle function calls
+                    if isinstance(node.func, ast.Name) and node.func.id in functions:
+                        func = functions[node.func.id]
+                        args = [eval_expr(arg) for arg in node.args]
+                        return func(*args)
+                    else:
+                        func_name = node.func.id if isinstance(node.func, ast.Name) else 'complex'
+                        raise ValueError(f"Unknown function: {func_name}")
                 else:
                     raise ValueError(f"Unsupported operation: {type(node)}")
 

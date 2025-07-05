@@ -1,19 +1,74 @@
 """ReAct-style reasoning agent using DeepSeek-R1"""
 
 import re
-from typing import List, Tuple, Optional
-from ollama_client import OllamaClient
-from tools import ToolExecutor
-from config import MAX_ITERATIONS
+import os
+from typing import List, Tuple, Optional, Union
+from .ollama_client import OllamaClient
+from .together_client import TogetherAIClient
+from .tools import ToolExecutor
+from .config import MAX_ITERATIONS
 
 
 class ReasoningAgent:
-    """ReAct-style reasoning agent"""
-
-    def __init__(self):
-        self.ollama_client = OllamaClient()
+    """ReAct-style reasoning agent with multiple AI backend support"""
+    
+    def __init__(self, backend: str = "auto"):
+        """
+        Initialize reasoning agent with specified backend
+        
+        Args:
+            backend: "ollama", "together", or "auto" (try together first, fallback to ollama)
+        """
+        self.backend = backend
+        self.ai_client = None
         self.tool_executor = ToolExecutor()
         self.conversation_history = []
+        
+        # Initialize AI client based on backend preference
+        self._initialize_ai_client()
+    
+    def _initialize_ai_client(self):
+        """Initialize AI client based on backend preference"""
+        if self.backend == "together":
+            self._try_together_client()
+        elif self.backend == "ollama":
+            self._try_ollama_client()
+        elif self.backend == "auto":
+            # Try together first (faster), fallback to ollama
+            if not self._try_together_client():
+                self._try_ollama_client()
+        else:
+            raise ValueError(f"Unknown backend: {self.backend}")
+    
+    def _try_together_client(self) -> bool:
+        """Try to initialize Together.xyz client"""
+        try:
+            client = TogetherAIClient()
+            if client.is_available():
+                self.ai_client = client
+                print(f"✅ Using Together.xyz - {client.model}")
+                return True
+            else:
+                print("❌ Together.xyz API not available")
+                return False
+        except Exception as e:
+            print(f"❌ Together.xyz initialization failed: {str(e)}")
+            return False
+    
+    def _try_ollama_client(self) -> bool:
+        """Try to initialize Ollama client"""
+        try:
+            client = OllamaClient()
+            if client.is_available():
+                self.ai_client = client
+                print(f"✅ Using Ollama - {client.model}")
+                return True
+            else:
+                print("❌ Ollama not available")
+                return False
+        except Exception as e:
+            print(f"❌ Ollama initialization failed: {str(e)}")
+            return False
 
     def create_system_prompt(self) -> str:
         """Create system prompt for ReAct reasoning"""
@@ -83,35 +138,65 @@ Begin!
 
     def is_complete(self, response: str) -> bool:
         """Check if the reasoning is complete (has Answer:)"""
-        return "Answer:" in response
+        # Check for multiple Answer: patterns to catch completion
+        answer_patterns = [
+            "Answer:",
+            "Final Answer:",
+            "The answer is",
+            "The result is"
+        ]
+        
+        for pattern in answer_patterns:
+            if pattern in response:
+                return True
+        
+        # Also check if response directly gives a numerical answer without action
+        if re.search(r'\b\d+\b', response) and len(response.split('\n')) <= 3:
+            return True
+            
+        return False
 
     def extract_answer(self, response: str) -> str:
         """Extract final answer from response"""
+        # Look for Answer: pattern first
         answer_pattern = r"Answer: (.+?)(?:\n|$)"
         match = re.search(answer_pattern, response, re.DOTALL)
-        return match.group(1).strip() if match else "No answer found"
-
+        if match:
+            return match.group(1).strip()
+        
+        # Fallback: look for just the last line if it contains numbers/results
+        lines = response.strip().split('\n')
+        if lines:
+            last_line = lines[-1].strip()
+            if last_line and not last_line.startswith(('Thought', 'Action', 'Observation')):
+                return last_line
+                
+        return "No answer found"
+    
     def solve(self, question: str) -> str:
         """Solve a question using ReAct reasoning"""
-
-        if not self.ollama_client.is_available():
-            return "Error: Ollama is not available. Please start Ollama and ensure DeepSeek-R1:8B is installed."
-
+        
+        if not self.ai_client:
+            return "Error: No AI backend available. Please check your configuration."
+        
+        if not self.ai_client.is_available():
+            return f"Error: AI backend not available. Current backend: {type(self.ai_client).__name__}"
+        
         # Initialize conversation
         system_prompt = self.create_system_prompt()
         conversation = f"{system_prompt}\n\nQuestion: {question}\n"
-
+        
         for iteration in range(MAX_ITERATIONS):
             print(f"\n--- Iteration {iteration + 1} ---")
-
+            
             # Get LLM response
-            print("Calling LLM...")
-            response = self.ollama_client.generate(conversation)
-
+            print("Calling AI...")
+            response = self.ai_client.generate(conversation)
+            
             if not response or "Error" in response:
-                return f"LLM Error: {response}"
-
-            print(f"LLM Response:\n{response}")
+                return f"AI Error: {response}"
+            
+            print(f"AI Response:\n{response}")
 
             # Check if reasoning is complete
             if self.is_complete(response):

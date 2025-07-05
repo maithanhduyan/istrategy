@@ -3,7 +3,7 @@
 import requests
 import json
 from typing import Dict, Any
-from config import OLLAMA_ENDPOINT, MODEL_NAME, TEMPERATURE
+from .config import OLLAMA_ENDPOINT, MODEL_NAME, TEMPERATURE
 
 
 class OllamaClient:
