@@ -5,7 +5,7 @@ import json
 import os
 import time
 from typing import Dict, Any, Optional
-from .config import TEMPERATURE
+from config import TEMPERATURE
 
 
 class TogetherAIClient:

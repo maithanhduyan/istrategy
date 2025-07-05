@@ -2,7 +2,7 @@
 
 import sys
 import argparse
-from .agent import ReasoningAgent
+from agent import ReasoningAgent
 
 
 def main():

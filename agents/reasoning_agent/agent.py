@@ -3,10 +3,10 @@
 import re
 import os
 from typing import List, Tuple, Optional, Union
-from .ollama_client import OllamaClient
-from .together_client import TogetherAIClient
-from .tools import ToolExecutor
-from .config import MAX_ITERATIONS
+from ollama_client import OllamaClient
+from together_client import TogetherAIClient
+from tools import ToolExecutor
+from config import MAX_ITERATIONS
 
 
 class ReasoningAgent:

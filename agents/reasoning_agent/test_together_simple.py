@@ -3,9 +3,9 @@
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from src.together_client import TogetherAIClient
+from together_client import TogetherAIClient
 
 
 def test_basic_math():
