@@ -6,22 +6,36 @@ from typing import List, Tuple, Optional, Union
 from .ollama_client import OllamaClient
 from .together_client import TogetherAIClient
 from .tools import ToolExecutor
+from .advanced_tools import AdvancedToolExecutor
 from .config import MAX_ITERATIONS
 
 
 class ReasoningAgent:
     """ReAct-style reasoning agent with multiple AI backend support"""
 
-    def __init__(self, backend: str = "auto"):
+    def __init__(self, backend: str = "auto", use_advanced_tools: bool = False):
         """
         Initialize reasoning agent with specified backend
 
         Args:
             backend: "ollama", "together", or "auto" (try together first, fallback to ollama)
+            use_advanced_tools: Whether to use advanced tools (RAG, thinking, inference)
         """
         self.backend = backend
+        self.use_advanced_tools = use_advanced_tools
         self.ai_client = None
-        self.tool_executor = ToolExecutor()
+        
+        # Initialize tool executor based on advanced tools preference
+        if use_advanced_tools:
+            try:
+                self.tool_executor = AdvancedToolExecutor(enable_async=True)
+                print("✅ Advanced tools enabled (RAG, Thinking, Inference)")
+            except Exception as e:
+                print(f"⚠️ Failed to load advanced tools, using basic tools: {e}")
+                self.tool_executor = ToolExecutor()
+        else:
+            self.tool_executor = ToolExecutor()
+            
         self.conversation_history = []
 
         # Initialize AI client based on backend preference
@@ -72,16 +86,47 @@ class ReasoningAgent:
 
     def create_system_prompt(self) -> str:
         """Create system prompt for ReAct reasoning"""
-        return """You are a concise reasoning agent. Answer directly using tools.
-
-Available tools:
+        basic_tools = """Available tools:
 - date_diff(date1, date2): Calculate days between ISO dates
 - run_python(code): Execute Python code
 - read_file(filepath): Read file content
 - write_file(filepath, content): Write content to file
 - math_calc(expression): Evaluate math expression
 - search_text(filepath, search_term): Search text in file
-- run_shell(command): Execute shell commands
+- run_shell(command): Execute shell commands"""
+
+        advanced_tools = """
+ADVANCED REASONING TOOLS:
+
+RAG (Knowledge) Tools:
+- rag_add_knowledge(text, source): Add knowledge to system
+- rag_search(query, max_results): Search knowledge base
+- rag_augmented_query(question): Create context-enhanced query
+
+Thinking Tools:
+- think_sequential(problem, num_thoughts): Step-by-step analysis
+- think_systems(system_name, component1, component2, ...): Systems analysis
+- think_critical(claim, evidence1, evidence2, ...): Critical evaluation
+- think_lateral(challenge, technique): Creative problem solving
+- think_root_cause(problem, symptom1, symptom2, ...): Root cause analysis
+- think_six_hats(topic, hat_color): Six thinking hats methodology
+- get_thinking_summary(): Summary of thinking processes
+
+Inference Tools:
+- logical_add_rule(premise, conclusion, confidence): Add logical rule
+- logical_add_fact(fact, confidence): Add logical fact
+- logical_infer(method): Perform logical inference (forward/prove:goal)
+- pattern_analyze_numeric(num1, num2, num3, ...): Analyze numeric patterns
+- pattern_analyze_text(text1, text2, text3, ...): Analyze text patterns
+- inference_status(): Get inference engine status"""
+
+        tools_section = basic_tools
+        if self.use_advanced_tools:
+            tools_section += advanced_tools
+
+        return f"""You are an advanced reasoning agent with sophisticated analytical capabilities.
+
+{tools_section}
 
 Format (be concise):
 Question: [question]
@@ -90,11 +135,18 @@ Action 1: [tool_name(args)]
 Observation 1: [result]
 Answer: [final answer]
 
+Advanced Reasoning Guidelines:
+- Use thinking tools for complex analysis before taking action
+- Use RAG tools when knowledge lookup would be helpful
+- Use inference tools for logical reasoning and pattern analysis
+- Combine multiple tools for sophisticated problem solving
+- Keep thoughts brief but leverage advanced capabilities
+
 Rules:
 - Keep thoughts brief (1-2 sentences max)
 - Execute tools when possible rather than reasoning manually
 - End with Answer: when complete
-- No verbose explanations
+- Use advanced tools for complex reasoning tasks
 
 Begin!
 """
