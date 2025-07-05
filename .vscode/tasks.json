@@ -24,6 +24,27 @@
             }
         },
         {
+            "label": "Kill all Python.exe processes",
+            "type": "shell",
+            "command": "kill",
+            "args": [
+                "-9",
+                "$(ps -ef | grep node | grep -v grep | awk '{print $2}')"
+            ],
+            "problemMatcher": [],
+            "windows": {
+                "command": "taskkill",
+                "args": [
+                    "/F",
+                    "/IM",
+                    "python.exe"
+                ]
+            },
+            "presentation": {
+                "reveal": "always"
+            }
+        },
+        {
             "label": "Kill Rust target/debug *.exe",
             "type": "shell",
             "command": "for",

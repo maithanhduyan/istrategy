@@ -1,0 +1,23 @@
+[project]
+name = "pgrag"
+version = "0.1.0"
+
+description = "Postgres RAG"
+
+authors = [{"name" = "Mai Thành Duy An", "email" = "tiachop0102@gmail.com"}]
+requires-python = ">=3.11"
+
+dependencies = [
+    "requests>=2.31.0",
+    "python-dateutil>=2.8.2",
+    "psycopg2-binary>=2.9.0",
+    "sentence-transformers",
+    "flask",
+    "fastapi",
+    "uvicorn",
+    "asyncpg>=0.30.0",
+]
+
+[project.scripts]
+pgrag = "app.main:main"
+
