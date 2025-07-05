@@ -10,8 +10,8 @@ import json
 from datetime import datetime
 
 try:
-    import chromadb  # type: ignore
-    from chromadb.config import Settings  # type: ignore
+    import chromadb
+    from chromadb.config import Settings
 
     CHROMADB_AVAILABLE = True
 except ImportError:
@@ -36,20 +36,25 @@ class RAGEngine:
             return
 
         try:
-            # Initialize ChromaDB client
-            self.client = chromadb.Client()
+            # Initialize ChromaDB client with explicit persist_directory
+            persist_dir = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "..", "..", "chroma_db")
+            )
+            self.client = chromadb.Client(Settings(persist_directory=persist_dir))
 
             # Get or create collection
             try:
                 self.collection = self.client.get_collection(name=self.collection_name)
                 print(
-                    f"✅ Connected to existing ChromaDB collection: {self.collection_name}"
+                    f"✅ Connected to existing ChromaDB collection: {self.collection_name} (persist: {persist_dir})"
                 )
-            except:
+            except Exception:
                 self.collection = self.client.create_collection(
                     name=self.collection_name
                 )
-                print(f"✅ Created new ChromaDB collection: {self.collection_name}")
+                print(
+                    f"✅ Created new ChromaDB collection: {self.collection_name} (persist: {persist_dir})"
+                )
 
         except Exception as e:
             print(f"⚠️ ChromaDB initialization failed: {e}")

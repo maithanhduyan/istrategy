@@ -7,7 +7,8 @@ This script shows step-by-step how the ReAct pattern works
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.agent import ReasoningAgent
 from src.tools import ToolExecutor

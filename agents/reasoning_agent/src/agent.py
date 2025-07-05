@@ -3,11 +3,21 @@
 import re
 import os
 from typing import List, Tuple, Optional, Union
-from .ollama_client import OllamaClient
-from .together_client import TogetherAIClient
-from .tools import ToolExecutor
-from .advanced_tools import AdvancedToolExecutor
-from .config import MAX_ITERATIONS
+
+# Use absolute imports to avoid relative import issues
+try:
+    from .ollama_client import OllamaClient
+    from .together_client import TogetherAIClient
+    from .tools import ToolExecutor
+    from .advanced_tools import AdvancedToolExecutor
+    from .config import MAX_ITERATIONS
+except ImportError:
+    # Fallback to direct imports when used as script
+    from ollama_client import OllamaClient
+    from together_client import TogetherAIClient
+    from tools import ToolExecutor
+    from advanced_tools import AdvancedToolExecutor
+    from config import MAX_ITERATIONS
 
 
 class ReasoningAgent:
@@ -24,7 +34,7 @@ class ReasoningAgent:
         self.backend = backend
         self.use_advanced_tools = use_advanced_tools
         self.ai_client = None
-        
+
         # Initialize tool executor based on advanced tools preference
         if use_advanced_tools:
             try:
@@ -35,7 +45,7 @@ class ReasoningAgent:
                 self.tool_executor = ToolExecutor()
         else:
             self.tool_executor = ToolExecutor()
-            
+
         self.conversation_history = []
 
         # Initialize AI client based on backend preference

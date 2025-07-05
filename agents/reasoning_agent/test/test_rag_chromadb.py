@@ -7,10 +7,10 @@ import asyncio
 import sys
 import os
 
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from rag_engine import RAGEngine, DocumentProcessor
+from src.rag_engine import RAGEngine, DocumentProcessor
 
 
 async def test_rag_chromadb():

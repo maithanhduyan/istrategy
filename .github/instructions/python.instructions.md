@@ -86,6 +86,8 @@ NEVER move to next step without verification.
 
 **Chú trọng bằng chứng thực tế hơn là tuyên bố vô căn cứ**
 
+**Mock data phù hợp với tạo prototype. Trước khi chưa có dữ liệu thực tế không được claim bất kỳ production verion nào.**
+
 ### Thinking Tools
 Sử dụng công cụ `#thinking` một MCP Server đã tích hợp sẵn trong vscode.
 - Sequential → Lập kế hoạch phân tích
