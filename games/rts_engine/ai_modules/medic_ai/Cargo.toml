@@ -1,0 +1,12 @@
+[package]
+name = "medic_ai"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+shared = { path = "../../crates/shared" }
+serde = { workspace = true }
+fastrand = { workspace = true }

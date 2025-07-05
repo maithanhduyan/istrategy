@@ -1,4 +1,13 @@
 {
+    "github.copilot.byokEnabled": true,
+    "github.copilot.chat.byok.ollamaEndpoint": {
+        "type": "string",
+        "default": "http://127.0.0.1:11434",
+        "tags": [
+            "preview"
+        ],
+        "markdownDescription": "%github.copilot.config.byok.ollamaEndpoint%"
+    },
     "[python]": {
         "editor.formatOnSave": true,
         "diffEditor.ignoreTrimWhitespace": false,
@@ -37,5 +46,5 @@
     "rust-analyzer.checkOnSave.command": "check",
     "rust-analyzer.cargo.allFeatures": true,
     "rust-analyzer.procMacro.enable": true,
-    "rust-analyzer.diagnostics.enable": true
+    "rust-analyzer.diagnostics.enable": true,
 }

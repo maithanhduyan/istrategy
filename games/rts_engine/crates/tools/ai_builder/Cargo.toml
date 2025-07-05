@@ -1,0 +1,15 @@
+[package]
+name = "ai_builder"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "rts_ai_builder"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true }
+colored = "2.0"
