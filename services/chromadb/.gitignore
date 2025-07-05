@@ -1,3 +1,5 @@
 
 chromadb_mcp.egg-info/
 __pycache__/
+
+!chromadb/src/

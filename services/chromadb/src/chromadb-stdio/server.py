@@ -72,17 +72,19 @@ async def chroma_create_collection(
     client = get_chroma_client()
     try:
         # Lấy dimension từ model embedding
-        model = SentenceTransformer("nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True)
+        model = SentenceTransformer(
+            "nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True
+        )
         embedding_dim = model.get_sentence_embedding_dimension()
         # Ghi metadata embedding_dim
         if metadata is None:
             metadata = {}
         metadata["embedding_dim"] = embedding_dim
-        collection = client.create_collection(
-            name=collection_name,
-            metadata=metadata
-        )
-        return {"result": f"Collection '{collection_name}' created successfully.", "embedding_dim": embedding_dim}
+        collection = client.create_collection(name=collection_name, metadata=metadata)
+        return {
+            "result": f"Collection '{collection_name}' created successfully.",
+            "embedding_dim": embedding_dim,
+        }
     except Exception as e:
         return {"error": str(e)}
 
@@ -152,16 +154,29 @@ async def chroma_add_documents(
         embedding_dim = None
         if hasattr(collection, "metadata") and collection.metadata:
             embedding_dim = collection.metadata.get("embedding_dim")
-        model = SentenceTransformer("nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True)
+        model = SentenceTransformer(
+            "nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True
+        )
         model_dim = model.get_sentence_embedding_dimension()
         if embedding_dim and embedding_dim != model_dim:
-            return {"error": f"Model embedding dim {model_dim} != collection dim {embedding_dim}"}
+            return {
+                "error": f"Model embedding dim {model_dim} != collection dim {embedding_dim}"
+            }
         # Encode embedding
         embeddings = model.encode(documents)
         if embeddings.shape[1] != model_dim:
-            return {"error": f"Embedding shape mismatch: {embeddings.shape[1]} != {model_dim}"}
-        collection.add(documents=list(documents), ids=list(ids), embeddings=embeddings.tolist(), metadatas=list(metadatas) if metadatas else None)
-        return {"result": f"Added {len(documents)} documents to collection '{collection_name}'."}
+            return {
+                "error": f"Embedding shape mismatch: {embeddings.shape[1]} != {model_dim}"
+            }
+        collection.add(
+            documents=list(documents),
+            ids=list(ids),
+            embeddings=embeddings.tolist(),
+            metadatas=list(metadatas) if metadatas else None,
+        )
+        return {
+            "result": f"Added {len(documents)} documents to collection '{collection_name}'."
+        }
     except Exception as e:
         return {"error": str(e)}
 
@@ -181,15 +196,28 @@ async def chroma_query_documents(
         embedding_dim = None
         if hasattr(collection, "metadata") and collection.metadata:
             embedding_dim = collection.metadata.get("embedding_dim")
-        model = SentenceTransformer("nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True)
+        model = SentenceTransformer(
+            "nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True
+        )
         model_dim = model.get_sentence_embedding_dimension()
         if embedding_dim and embedding_dim != model_dim:
-            return {"error": f"Model embedding dim {model_dim} != collection dim {embedding_dim}"}
+            return {
+                "error": f"Model embedding dim {model_dim} != collection dim {embedding_dim}"
+            }
         # Encode embedding cho query
         query_embeddings = model.encode(query_texts)
         if query_embeddings.shape[1] != model_dim:
-            return {"error": f"Query embedding shape mismatch: {query_embeddings.shape[1]} != {model_dim}"}
-        include_literal = cast(list[Literal["documents", "embeddings", "metadatas", "distances", "uris", "data"]], include)
+            return {
+                "error": f"Query embedding shape mismatch: {query_embeddings.shape[1]} != {model_dim}"
+            }
+        include_literal = cast(
+            list[
+                Literal[
+                    "documents", "embeddings", "metadatas", "distances", "uris", "data"
+                ]
+            ],
+            include,
+        )
         result = collection.query(
             query_embeddings=query_embeddings.tolist(),
             n_results=n_results,
@@ -215,7 +243,14 @@ async def chroma_get_documents(
     client = get_chroma_client()
     try:
         collection = client.get_collection(collection_name)
-        include_literal = cast(list[Literal["documents", "embeddings", "metadatas", "distances", "uris", "data"]], include)
+        include_literal = cast(
+            list[
+                Literal[
+                    "documents", "embeddings", "metadatas", "distances", "uris", "data"
+                ]
+            ],
+            include,
+        )
         result = collection.get(
             ids=ids if ids is not None else None,
             where=where,
@@ -246,7 +281,9 @@ async def chroma_update_documents(
             metadatas=list(metadatas) if metadatas else None,
             documents=list(documents) if documents else None,
         )
-        return {"result": f"Updated {len(ids)} documents in collection '{collection_name}'."}
+        return {
+            "result": f"Updated {len(ids)} documents in collection '{collection_name}'."
+        }
     except Exception as e:
         return {"error": str(e)}
 
@@ -257,7 +294,9 @@ async def chroma_delete_documents(collection_name: str, ids: list[str]) -> dict:
     try:
         collection = client.get_collection(collection_name)
         collection.delete(ids=list(ids))
-        return {"result": f"Deleted {len(ids)} documents from collection '{collection_name}'."}
+        return {
+            "result": f"Deleted {len(ids)} documents from collection '{collection_name}'."
+        }
     except Exception as e:
         return {"error": str(e)}
 
@@ -293,12 +332,12 @@ def validate_thought_data(input_data: Dict) -> Dict:
     }
 
 
-async def echo(message: str) -> str:
+async def echo_echo(message: str) -> str:
     """Echo back the provided message with formatting."""
     return f"Echo: {message}"
 
 
-async def get_server_status() -> str:
+async def echo_get_server_status() -> str:
     """Get the current server status."""
     return "ChromaDB MCP Server is running successfully!"
 
@@ -309,10 +348,10 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
 
     # Handle server tools
     match name:
-        case "get_server_status":
+        case "chroma_get_server_status":
             status_message = await get_server_status()
             return [types.TextContent(type="text", text=status_message)]
-        case "echo":
+        case "chroma_echo":
             message = arguments.get("message", "")
             echo_result = await echo(message)
             return [types.TextContent(type="text", text=echo_result)]
@@ -351,7 +390,12 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                     embedding_function_name=embedding_function_name,
                     metadata=metadata,
                 )
-                return [types.TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps(result, indent=2, ensure_ascii=False),
+                    )
+                ]
             except Exception as e:
                 return [types.TextContent(type="text", text=f"Error: {str(e)}")]
         case "chroma_get_collection_info":
@@ -365,7 +409,12 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                     ]
 
                 result = await chroma_get_collection_info(collection_name)
-                return [types.TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps(result, indent=2, ensure_ascii=False),
+                    )
+                ]
             except Exception as e:
                 return [types.TextContent(type="text", text=f"Error: {str(e)}")]
         case "chroma_get_collection_count":
@@ -379,7 +428,12 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                     ]
 
                 count = await chroma_get_collection_count(collection_name)
-                return [types.TextContent(type="text", text=json.dumps(count, indent=2, ensure_ascii=False))]
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps(count, indent=2, ensure_ascii=False),
+                    )
+                ]
             except Exception as e:
                 return [types.TextContent(type="text", text=f"Error: {str(e)}")]
         case "chroma_modify_collection":
@@ -400,7 +454,12 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                     new_name=new_name,
                     new_metadata=new_metadata,
                 )
-                return [types.TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps(result, indent=2, ensure_ascii=False),
+                    )
+                ]
             except Exception as e:
                 return [types.TextContent(type="text", text=f"Error: {str(e)}")]
         case "chroma_delete_collection":
@@ -414,7 +473,12 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                     ]
 
                 result = await chroma_delete_collection(collection_name)
-                return [types.TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps(result, indent=2, ensure_ascii=False),
+                    )
+                ]
             except Exception as e:
                 return [types.TextContent(type="text", text=f"Error: {str(e)}")]
         case "chroma_add_documents":
@@ -437,7 +501,12 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                     ids=ids,
                     metadatas=metadatas,
                 )
-                return [types.TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps(result, indent=2, ensure_ascii=False),
+                    )
+                ]
             except Exception as e:
                 return [types.TextContent(type="text", text=f"Error: {str(e)}")]
         case "chroma_query_documents":
@@ -466,7 +535,12 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                     where_document=where_document,
                     include=include,
                 )
-                return [types.TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps(result, indent=2, ensure_ascii=False),
+                    )
+                ]
             except Exception as e:
                 return [types.TextContent(type="text", text=f"Error: {str(e)}")]
         case "chroma_get_documents":
@@ -495,7 +569,12 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                     limit=limit,
                     offset=offset,
                 )
-                return [types.TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps(result, indent=2, ensure_ascii=False),
+                    )
+                ]
             except Exception as e:
                 return [types.TextContent(type="text", text=f"Error: {str(e)}")]
         case "chroma_update_documents":
@@ -520,7 +599,12 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                     metadatas=metadatas,
                     documents=documents,
                 )
-                return [types.TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps(result, indent=2, ensure_ascii=False),
+                    )
+                ]
             except Exception as e:
                 return [types.TextContent(type="text", text=f"Error: {str(e)}")]
         case "chroma_delete_documents":
@@ -539,7 +623,12 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
                     collection_name=collection_name,
                     ids=ids,
                 )
-                return [types.TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps(result, indent=2, ensure_ascii=False),
+                    )
+                ]
             except Exception as e:
                 return [types.TextContent(type="text", text=f"Error: {str(e)}")]
         case _:
@@ -555,7 +644,7 @@ async def list_tools() -> list[types.Tool]:
     tools.extend(
         [
             types.Tool(
-                name="get_server_status",
+                name="chroma_get_server_status",
                 description="Get the current status of the MCP server.",
                 inputSchema={
                     "type": "object",
@@ -563,7 +652,7 @@ async def list_tools() -> list[types.Tool]:
                 },
             ),
             types.Tool(
-                name="echo",
+                name="chroma_echo",
                 description="Echo back the provided message.",
                 inputSchema={
                     "type": "object",
