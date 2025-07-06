@@ -8,7 +8,11 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Dict, Any, List
 from app.auth import get_current_user, verify_mcp_api_key
 from app.db import get_user_by_username
-from app.pipeline import get_collections
+from app.pipeline import (
+    get_collections, create_collection_with_embeddings,
+    add_text_documents_with_embeddings, search_similar_documents,
+    get_collection_summary, batch_process_texts
+)
 
 router = APIRouter(dependencies=[Depends(verify_mcp_api_key)])
 
@@ -41,6 +45,48 @@ async def get_chroma_collections() -> str:
     except Exception as e:
         return f"Error retrieving ChromaDB collections: {str(e)}"
 
+async def create_collection(name: str, description: str = "") -> str:
+    """Create a new ChromaDB collection with embeddings."""
+    try:
+        metadata = {"description": description or f"Collection {name}"}
+        result = await create_collection_with_embeddings(name, metadata)
+        return f"Created collection '{name}' successfully. Status: {result['status']}"
+    except Exception as e:
+        return f"Error creating collection '{name}': {str(e)}"
+
+async def add_documents(collection_name: str, texts: str) -> str:
+    """Add documents to a ChromaDB collection."""
+    try:
+        # Split texts by newlines or semicolons
+        text_list = [t.strip() for t in texts.replace('\n', ';').split(';') if t.strip()]
+        result = await add_text_documents_with_embeddings(collection_name, text_list)
+        return f"Added {result['documents_added']} documents to '{collection_name}'"
+    except Exception as e:
+        return f"Error adding documents to '{collection_name}': {str(e)}"
+
+async def search_documents(collection_name: str, query: str, n_results: int = 5) -> str:
+    """Search for similar documents in a ChromaDB collection."""
+    try:
+        result = await search_similar_documents(collection_name, query, n_results)
+        docs = result['results']['documents'][0] if result['results']['documents'] else []
+        distances = result['results']['distances'][0] if result['results']['distances'] else []
+        
+        response = f"Found {len(docs)} documents for query '{query}':\n"
+        for i, (doc, dist) in enumerate(zip(docs, distances)):
+            response += f"{i+1}. (distance: {dist:.3f}) {doc[:100]}...\n"
+        return response
+    except Exception as e:
+        return f"Error searching in '{collection_name}': {str(e)}"
+
+async def get_collection_info(collection_name: str) -> str:
+    """Get comprehensive information about a ChromaDB collection."""
+    try:
+        summary = await get_collection_summary(collection_name)
+        stats = summary['stats']['stats']
+        return f"Collection '{collection_name}': {stats['count']} documents, metadata: {stats.get('metadata', {})}"
+    except Exception as e:
+        return f"Error getting info for '{collection_name}': {str(e)}"
+
 # MCP Tool Handlers
 @mcp_app.call_tool()
 async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBlock]:
@@ -59,6 +105,26 @@ async def handle_all_tools(name: str, arguments: dict) -> list[types.ContentBloc
         case "chroma_get_collections":
             collections_info = await get_chroma_collections()
             return [types.ContentBlock(type="text", text=collections_info)]
+        case "chroma_create_collection":
+            name = arguments.get("name", "")
+            description = arguments.get("description", "")
+            result = await create_collection(name, description)
+            return [types.ContentBlock(type="text", text=result)]
+        case "chroma_add_documents":
+            collection_name = arguments.get("collection_name", "")
+            texts = arguments.get("texts", "")
+            result = await add_documents(collection_name, texts)
+            return [types.ContentBlock(type="text", text=result)]
+        case "chroma_search_documents":
+            collection_name = arguments.get("collection_name", "")
+            query = arguments.get("query", "")
+            n_results = arguments.get("n_results", 5)
+            result = await search_documents(collection_name, query, n_results)
+            return [types.ContentBlock(type="text", text=result)]
+        case "chroma_collection_info":
+            collection_name = arguments.get("collection_name", "")
+            result = await get_collection_info(collection_name)
+            return [types.ContentBlock(type="text", text=result)]
         case _:
             raise ValueError(f"Unknown tool: {name}")
 
@@ -103,6 +169,78 @@ async def list_tools() -> list[types.Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {},
+            },
+        ),
+        types.Tool(
+            name="chroma_create_collection",
+            description="Create a new ChromaDB collection with embeddings.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the collection to create"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Optional description for the collection"
+                    }
+                },
+                "required": ["name"]
+            },
+        ),
+        types.Tool(
+            name="chroma_add_documents",
+            description="Add text documents to a ChromaDB collection.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "collection_name": {
+                        "type": "string",
+                        "description": "Name of the collection"
+                    },
+                    "texts": {
+                        "type": "string",
+                        "description": "Text documents separated by semicolons or newlines"
+                    }
+                },
+                "required": ["collection_name", "texts"]
+            },
+        ),
+        types.Tool(
+            name="chroma_search_documents",
+            description="Search for similar documents in a ChromaDB collection.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "collection_name": {
+                        "type": "string",
+                        "description": "Name of the collection to search"
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "Search query text"
+                    },
+                    "n_results": {
+                        "type": "integer",
+                        "description": "Number of results to return (default: 5)"
+                    }
+                },
+                "required": ["collection_name", "query"]
+            },
+        ),
+        types.Tool(
+            name="chroma_collection_info",
+            description="Get information about a ChromaDB collection.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "collection_name": {
+                        "type": "string",
+                        "description": "Name of the collection"
+                    }
+                },
+                "required": ["collection_name"]
             },
         ),
     ]
@@ -197,6 +335,22 @@ async def handle_mcp_protocol(request: Request):
                             result_text = await get_user_info(username)
                         case "chroma_get_collections":
                             result_text = await get_chroma_collections()
+                        case "chroma_create_collection":
+                            name = arguments.get("name", "")
+                            description = arguments.get("description", "")
+                            result_text = await create_collection(name, description)
+                        case "chroma_add_documents":
+                            collection_name = arguments.get("collection_name", "")
+                            texts = arguments.get("texts", "")
+                            result_text = await add_documents(collection_name, texts)
+                        case "chroma_search_documents":
+                            collection_name = arguments.get("collection_name", "")
+                            query = arguments.get("query", "")
+                            n_results = arguments.get("n_results", 5)
+                            result_text = await search_documents(collection_name, query, n_results)
+                        case "chroma_collection_info":
+                            collection_name = arguments.get("collection_name", "")
+                            result_text = await get_collection_info(collection_name)
                         case _:
                             raise ValueError(f"Unknown tool: {tool_name}")
                     
@@ -299,6 +453,34 @@ async def call_mcp_tool(tool_name: str, arguments: Dict[str, Any] = None):
                 result = [{"type": "text", "content": info}]
             case "chroma_get_collections" | "get_chroma_collections":
                 collections_info = await get_chroma_collections()
+                result = [{"type": "text", "content": collections_info}]
+            case "chroma_create_collection" | "create_collection":
+                name = arguments.get("name", "")
+                description = arguments.get("description", "")
+                if not name:
+                    raise ValueError("Collection name is required")
+                collections_info = await create_collection(name, description)
+                result = [{"type": "text", "content": collections_info}]
+            case "chroma_add_documents" | "add_documents":
+                collection_name = arguments.get("collection_name", "")
+                texts = arguments.get("texts", "")
+                if not collection_name or not texts:
+                    raise ValueError("Collection name and texts are required")
+                collections_info = await add_documents(collection_name, texts)
+                result = [{"type": "text", "content": collections_info}]
+            case "chroma_search_documents" | "search_documents":
+                collection_name = arguments.get("collection_name", "")
+                query = arguments.get("query", "")
+                n_results = arguments.get("n_results", 5)
+                if not collection_name or not query:
+                    raise ValueError("Collection name and query are required")
+                collections_info = await search_documents(collection_name, query, n_results)
+                result = [{"type": "text", "content": collections_info}]
+            case "chroma_collection_info" | "collection_info":
+                collection_name = arguments.get("collection_name", "")
+                if not collection_name:
+                    raise ValueError("Collection name is required")
+                collections_info = await get_collection_info(collection_name)
                 result = [{"type": "text", "content": collections_info}]
             case _:
                 raise ValueError(f"Unknown tool: {tool_name}")
