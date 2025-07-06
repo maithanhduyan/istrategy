@@ -1,5 +1,6 @@
 #
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.logger import get_logger, LOGGING_CONFIG
 import asyncio
@@ -49,6 +50,15 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to shut down application: {e}")
 
 app = FastAPI(lifespan=lifespan)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Frontend URLs
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Include authentication and API routes
 app.include_router(app_router, prefix="/api", tags=["api"])

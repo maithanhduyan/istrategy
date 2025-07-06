@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # app/router.py
 # This module defines the main router for the FastAPI application, including authentication endpoints.
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from pydantic import BaseModel
 from typing import Dict, Any
 from app.auth import login_user, get_current_user, require_auth
-from app.db import create_user
+from app.db import create_user, get_all_users
 from app.logger import get_logger
 
 logger = get_logger(__name__)
@@ -41,11 +41,17 @@ def health_check():
     return {"status": "ok", "message": "Welcome to the Assistant Service!"}
 
 
+@router.get("/health")
+def health_check():
+    """Health check endpoint."""
+    return {"status": "ok", "message": "Server is healthy"}
+
+
 @router.post("/auth/login", response_model=LoginResponse)
-async def login(request: LoginRequest):
+async def login(username: str = Form(...), password: str = Form(...)):
     """Login endpoint."""
     try:
-        result = login_user(request.username, request.password)
+        result = login_user(username, password)
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,7 +59,7 @@ async def login(request: LoginRequest):
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        logger.info(f"User {request.username} logged in successfully")
+        logger.info(f"User {username} logged in successfully")
         return result
     except HTTPException:
         raise
@@ -124,6 +130,35 @@ async def get_current_user_info(current_user: Dict[str, Any] = Depends(get_curre
         "user": current_user,
         "status": "authenticated"
     }
+
+
+@router.get("/auth/api-key")
+async def get_api_key(current_user: Dict[str, Any] = Depends(get_current_user)):
+    """Get API key for MCP access."""
+    from app.auth import ASSISTANT_API_KEY
+    return {
+        "api_key": ASSISTANT_API_KEY,
+        "usage": "Add as X-API-Key header for MCP endpoints",
+        "user": current_user['username']
+    }
+
+
+@router.get("/users")
+async def get_users(current_user: Dict[str, Any] = Depends(get_current_user)):
+    """Get all users (admin access required)."""
+    try:
+        users = get_all_users()
+        return {
+            "users": users,
+            "count": len(users),
+            "status": "success"
+        }
+    except Exception as e:
+        logger.error(f"Get users error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
 
 
 @router.get("/protected")

@@ -127,3 +127,29 @@ def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
         return None
     finally:
         conn.close()
+
+
+def get_all_users() -> list:
+    """Get all users from database."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute('''
+            SELECT id, username, created_at
+            FROM users 
+            ORDER BY created_at DESC
+        ''')
+        users = cursor.fetchall()
+        
+        return [
+            {
+                'id': user['id'],
+                'username': user['username'],
+                'created_at': user['created_at']
+            }
+            for user in users
+        ]
+    except Exception as e:
+        logger.error(f"Error getting all users: {e}")
+        return []
+    finally:
+        conn.close()

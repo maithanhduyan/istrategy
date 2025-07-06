@@ -2,9 +2,10 @@
 # app/auth.py
 import jwt
 import os
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from fastapi import HTTPException, Depends, status
+from fastapi import HTTPException, Depends, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.db import authenticate_user, get_user_by_username
 from app.logger import get_logger
@@ -16,7 +17,39 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+# API Key Configuration for MCP
+ASSISTANT_API_KEY = os.getenv("ASSISTANT_API_KEY", "assistant-mcp-key-2025-super-secure-token")
+
 security = HTTPBearer()
+
+
+def generate_api_key() -> str:
+    """Generate a secure API key."""
+    return f"assist_{secrets.token_urlsafe(32)}"
+
+
+def verify_api_key(api_key: str) -> bool:
+    """Verify API key for MCP access."""
+    return api_key == ASSISTANT_API_KEY
+
+
+async def verify_mcp_api_key(x_api_key: Optional[str] = Header(None)) -> bool:
+    """Dependency to verify MCP API key from header."""
+    if not x_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing API key. Please provide X-API-Key header.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not verify_api_key(x_api_key):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return True
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

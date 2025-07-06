@@ -64,6 +64,22 @@ $token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJfaWQiO
 ```
 $response = Invoke-WebRequest -Uri http://localhost:8000/api/auth/login -Method POST -ContentType "application/json" -Body '{"username":"admin","password":"admin123"}'; $tokenObj = $response.Content | ConvertFrom-Json; $newToken = $tokenObj.access_token; Invoke-WebRequest -Uri http://localhost:8000/mcp/protected/current-user -Method GET -Headers @{Authorization="Bearer $newToken"}
 ```
+### MCP API KEY
+
+```
+Invoke-WebRequest -Uri http://localhost:8000/mcp/ -Method GET -Headers @{"X-API-Key"="assistant-mcp-key-2025-super-secure-token"}
+```
+
+Bây giờ hãy test việc bảo vệ endpoint /mcp bằng API key. Trước tiên test không có API key:
+```
+Invoke-WebRequest -Uri "http://localhost:8001/mcp" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{\"jsonrpc\": \"2.0\", \"method\": \"tools/list\", \"id\": 1}'
+```
+
+Test truy cập endpoint /mcp với API key đúng
+```
+Invoke-WebRequest -Uri "http://localhost:8001/mcp" -Method POST -Headers @{"Content-Type"="application/json"; "X-API-Key"="assistant-mcp-key-2025-super-secure-token"} -Body '{\"jsonrpc\": \"2.0\", \"method\": \"tools/list\", \"id\": 1}'
+```
+
 
 ## SQLite Command
 
