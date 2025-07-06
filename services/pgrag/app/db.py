@@ -1,7 +1,7 @@
 import asyncpg
+import psycopg2
 from logger import get_logger
 from config import DB_CONFIG
-import psycopg2
 
 logger = get_logger(__name__)
 
@@ -10,6 +10,7 @@ _asyncpg_pool = None
 
 
 async def get_pool():
+    """Get the asyncpg connection pool, creating it if it doesn't exist."""
     global _asyncpg_pool
     if _asyncpg_pool is None:
         _asyncpg_pool = await asyncpg.create_pool(
@@ -25,6 +26,7 @@ async def get_pool():
 
 
 async def close_pool():
+    """Close the asyncpg connection pool."""
     global _asyncpg_pool
     if _asyncpg_pool:
         await _asyncpg_pool.close()
@@ -32,6 +34,7 @@ async def close_pool():
 
 
 async def execute_query(sql: str, params=None) -> None:
+    """Execute a SQL query without returning results."""
     pool = await get_pool()
     async with pool.acquire() as conn:
         try:

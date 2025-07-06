@@ -1,3 +1,4 @@
 {
-    "github.copilot.chat.byok.ollamaEndpoint": "http://localhost:11434",
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": "active",
 }

@@ -69,7 +69,7 @@ def get_chroma_client(args=None):
     if _chroma_client is None:
         try:
             # Try to create persistent client first
-            data_dir = os.getenv("CHROMA_DATA_DIR", "./chromadb")
+            data_dir = os.getenv("CHROMA_DATA_DIR", "./chroma_db")
             _chroma_client = chromadb.PersistentClient(path=data_dir)
         except Exception:
             # Fallback to ephemeral client

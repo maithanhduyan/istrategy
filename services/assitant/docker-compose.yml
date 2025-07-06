@@ -1,0 +1,18 @@
+
+services:
+  
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - HOST=value
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped

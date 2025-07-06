@@ -1,0 +1,30 @@
+[project]
+name  = "assistant"
+version="0.1.0"
+
+description = "Trợ lý VSCode"
+
+authors = [{"name"  = "Mai Thành Duy An", "email"="tiachop0102@gmail.com"}]
+
+requires-python= ">=3.12"
+
+dependencies = [
+    "requests",
+    "fastapi",
+    "sentence-transformers",
+    "uvicorn",
+    "chromadb",
+    "mcp",
+    "PyJWT",
+]
+
+
+[project.scripts]
+assistant="app.main:main"
+
+[tool.setuptools]
+packages = ["app"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

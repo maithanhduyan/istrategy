@@ -1,0 +1,3 @@
+*.egg-info/
+pgvector_data/
+__pycache__/
