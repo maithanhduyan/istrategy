@@ -146,3 +146,4 @@ vite.config.ts.timestamp-*
 chroma_db/
 memory.json
 
+services/assitant/assistant.db
