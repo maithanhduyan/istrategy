@@ -44,7 +44,7 @@
             ]
         },
         "assistant": {
-            "url": "http://localhost:8001/mcp",
+            "url": "http://localhost:8000/mcp",
             "headers": {
                 "X-API-Key": "assistant-mcp-key-2025-super-secure-token"
             }

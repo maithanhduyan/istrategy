@@ -33,3 +33,20 @@ async def initialize_pipeline(preload_models: bool = False):
     except Exception as e:
         logger.error(f"Failed to initialize pipeline: {e}")
         raise
+
+# pipeline get collections: embed, chroma
+async def get_collections():
+    """
+    Retrieve the list of collections from ChromaDB.
+    
+    Returns:
+        List of collection names.
+    """
+    try:
+        client = get_chroma_client()
+        collections = await chroma_list_collections()
+        logger.info(f"Retrieved collections: {collections}")
+        return collections
+    except Exception as e:
+        logger.error(f"Failed to retrieve collections: {e}")
+        raise 

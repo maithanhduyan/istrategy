@@ -80,7 +80,10 @@ Test truy cập endpoint /mcp với API key đúng
 Invoke-WebRequest -Uri "http://localhost:8001/mcp" -Method POST -Headers @{"Content-Type"="application/json"; "X-API-Key"="assistant-mcp-key-2025-super-secure-token"} -Body '{\"jsonrpc\": \"2.0\", \"method\": \"tools/list\", \"id\": 1}'
 ```
 
-
+Tools List
+```
+Invoke-WebRequest -Uri "http://localhost:8000/mcp/" -Method POST -Headers @{"X-API-Key" = "assistant-mcp-key-2025-super-secure-token"; "Content-Type" = "application/json"} -Body '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}'
+```
 ## SQLite Command
 
 Thông tin database:
@@ -97,4 +100,14 @@ cd C:\Users\tiach\Downloads\istrategy\services\assitant; python -c "import sqlit
 - Kiểm tra thông tin thực tế của database SQLite:
 ```
 cd C:\Users\tiach\Downloads\istrategy\services\assitant; python -c "import sqlite3; conn = sqlite3.connect('assistant.db'); cursor = conn.cursor(); cursor.execute('SELECT name FROM sqlite_master WHERE type=\"table\";'); print('Tables:', cursor.fetchall()); cursor.execute('PRAGMA table_info(users);'); print('Schema:', cursor.fetchall()); cursor.execute('SELECT * FROM users;'); print('Users:', cursor.fetchall()); conn.close()"
+```
+
+## Chromadb test
+
+```
+Invoke-WebRequest -Uri "http://localhost:8000/mcp/" -Method POST -Headers @{"X-API-Key" = "assistant-mcp-key-2025-super-secure-token"; "Content-Type" = "application/json"} -Body '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}'
+```
+- Get Collection
+```
+$response = Invoke-WebRequest -Uri "http://localhost:8000/mcp/" -Method POST -Headers @{"X-API-Key" = "assistant-mcp-key-2025-super-secure-token"; "Content-Type" = "application/json"} -Body '{"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "chroma_get_collections", "arguments": {}}}'; $response.Content
 ```

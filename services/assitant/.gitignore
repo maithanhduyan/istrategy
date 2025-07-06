@@ -1,5 +1,5 @@
 *.egg-info/
 pgvector_data/
 __pycache__/
-assistant.db
+*.db
 !.env.example

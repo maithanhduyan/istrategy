@@ -24,9 +24,15 @@ def get_chroma_client():
         except Exception as e:
             logger.error(f"Failed to initialize ChromaDB client: {e}")
             # Fallback to ephemeral client
-            _chroma_client = chromadb.EphemeralClient()
-            logger.info("Falling back to ephemeral ChromaDB client.")
-            raise
+            try:
+                _chroma_client = chromadb.EphemeralClient()
+                logger.info("Falling back to ephemeral ChromaDB client.")
+            except Exception as fallback_error:
+                logger.error(f"Failed to initialize ephemeral ChromaDB client: {fallback_error}")
+                _chroma_client = None
+                raise
+    
+    return _chroma_client
 
 async def chroma_list_collections(
     limit: int | None = None, offset: int | None = None
@@ -42,6 +48,10 @@ async def chroma_list_collections(
     """
     client = get_chroma_client()
     try:
+        if client is None:
+            logger.warning("ChromaDB client is None")
+            return ["__NO_COLLECTIONS_FOUND__"]
+        
         colls = client.list_collections(limit=limit, offset=offset)
         # Safe handling: If colls is None or empty, return a special marker
         if not colls:
@@ -50,7 +60,7 @@ async def chroma_list_collections(
         return [coll.name for coll in colls]
     except Exception as e:
         logger.error(f"Error listing collections: {e}")
-        raise
+        return ["__ERROR_LISTING_COLLECTIONS__"]
 
 
 async def chroma_create_collection(
@@ -78,8 +88,7 @@ async def chroma_create_collection(
         }.get(embedding_function_name, 1536)
         collection = client.create_collection(
             name=collection_name,
-            embedding_function=embedding_function_name,
-            metadata=metadata or {},
+            metadata=metadata or {"description": "Auto-created collection"},
         )
         return {
             "result": f"Collection '{collection}' created successfully.",
